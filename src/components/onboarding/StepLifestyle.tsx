@@ -1,9 +1,8 @@
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import type { StepProps } from "./types";
 
-export default function StepLifestyle({ data, updateData, errors }: StepProps) {
+export default function StepLifestyle({ data, updateData }: StepProps) {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
@@ -34,16 +33,6 @@ export default function StepLifestyle({ data, updateData, errors }: StepProps) {
           <span>Low</span>
           <span>High</span>
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="otherSports">Other Sports (optional)</Label>
-        <Input
-          id="otherSports"
-          placeholder="e.g. Cycling, Swimming"
-          value={data.otherSports}
-          onChange={(e) => updateData({ otherSports: e.target.value })}
-        />
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -8,7 +7,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import ChipSelect from "./ChipSelect";
 import type { StepProps } from "./types";
+
+const STATION_OPTIONS = [
+  "SkiErg", "Rowing", "Running", "Sled Push", "Sled Pull",
+  "Burpee Broad Jumps", "Farmers Carry", "Sandbag Lunges", "Wallballs",
+];
 
 export default function StepRunningFitness({ data, updateData, errors }: StepProps) {
   return (
@@ -56,23 +61,25 @@ export default function StepRunningFitness({ data, updateData, errors }: StepPro
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="strengths">Strengths</Label>
-        <Textarea
-          id="strengths"
-          placeholder="e.g. SkiErg, Rowing"
-          value={data.strengths}
-          onChange={(e) => updateData({ strengths: e.target.value })}
+        <Label>Strengths (select at least 1)</Label>
+        <ChipSelect
+          options={STATION_OPTIONS}
+          selected={data.strengths}
+          disabled={data.weaknesses}
+          onChange={(v) => updateData({ strengths: v })}
         />
+        {errors.strengths && <p className="text-sm text-destructive">{errors.strengths}</p>}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="weaknesses">Weaknesses</Label>
-        <Textarea
-          id="weaknesses"
-          placeholder="e.g. Sled Push, Running"
-          value={data.weaknesses}
-          onChange={(e) => updateData({ weaknesses: e.target.value })}
+        <Label>Weaknesses (select at least 1)</Label>
+        <ChipSelect
+          options={STATION_OPTIONS}
+          selected={data.weaknesses}
+          disabled={data.strengths}
+          onChange={(v) => updateData({ weaknesses: v })}
         />
+        {errors.weaknesses && <p className="text-sm text-destructive">{errors.weaknesses}</p>}
       </div>
     </div>
   );

@@ -38,6 +38,8 @@ const STEP_VALIDATIONS: Record<number, ValidationRule[]> = {
     { field: "fiveKmTime", message: "5K time is required", validate: (d) => d.fiveKmTime.trim().length > 0 },
     { field: "runFrequency", message: "Run frequency is required", validate: (d) => d.runFrequency.length > 0 },
     { field: "longestRecentRun", message: "Longest run is required", validate: (d) => d.longestRecentRun !== "" },
+    { field: "strengths", message: "Select at least one strength", validate: (d) => d.strengths.length > 0 },
+    { field: "weaknesses", message: "Select at least one weakness", validate: (d) => d.weaknesses.length > 0 },
   ],
   4: [], // all optional or have defaults
   5: [
