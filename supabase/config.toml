@@ -1,1 +1,4 @@
 project_id = "lnivkbfaecbztfbdqrow"
+
+[functions.save-plan]
+verify_jwt = false
