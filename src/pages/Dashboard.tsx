@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Zap, Flag, CalendarDays } from "lucide-react";
+import { Zap, Flag, CalendarDays, Target, Calendar as CalendarIcon } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import SessionLogCard, { type SessionLog } from "@/components/SessionLogCard";
 import { getSessionDate } from "@/lib/sessionDate";
@@ -14,10 +14,12 @@ interface PlanData {
   plan?: {
     raceDate?: string;
     raceName?: string;
+    goalTime?: string;
     totalWeeks?: number;
     blocks?: {
       blockNumber?: number;
       blockName?: string;
+      blockGoal?: string;
       weekStart?: number;
       weekEnd?: number;
       weeks?: {
@@ -130,6 +132,10 @@ export default function Dashboard() {
     return sessions.find(s => DAY_MAP[s.dayOfWeek || ""] === todayDow) || null;
   }, [currentWeekData, today]);
 
+  const weekSessionCount = useMemo(() => {
+    return currentWeekData?.sessions?.length || 0;
+  }, [currentWeekData]);
+
   const todaySessionDate = useMemo(() => {
     if (!todaySession || !startDate) return null;
     const startStr = startDate.toISOString().substring(0, 10);
@@ -179,42 +185,65 @@ export default function Dashboard() {
       </header>
 
       <main className="mx-auto max-w-lg space-y-4 px-4 pb-8 sm:px-8">
-        {/* Countdown */}
-        <Card className="border-border bg-card overflow-hidden">
-          <CardContent className="flex flex-col items-center py-8">
-            {daysUntilRace !== null && daysUntilRace > 0 ? (
-              <>
-                <p className="text-6xl font-black text-primary text-glow">{daysUntilRace}</p>
-                <p className="mt-1 text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                  Tage bis
-                </p>
-                <p className="text-lg font-black uppercase tracking-wider text-foreground">
-                  {p?.raceName || "Race Day"}
-                </p>
-              </>
-            ) : (
-              <p className="text-3xl font-black uppercase text-primary text-glow">GESCHAFFT 🏁</p>
-            )}
-          </CardContent>
-        </Card>
+        {/* Plan Summary Banner */}
+        <Card className="border-l-2 border-l-primary border-border bg-card/80 overflow-hidden">
+          <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5">
+            {/* Zielzeit */}
+            <div className="flex flex-col gap-1">
+              <Target className="h-4 w-4 text-primary" />
+              <p className="text-xl font-black text-foreground">
+                {p?.goalTime || "—"}
+              </p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Zielzeit
+              </p>
+            </div>
 
-        {/* Current Week */}
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground">
-              Aktuelle Trainingswoche
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-black text-foreground">
-              WOCHE {Math.min(currentWeek, totalWeeks)} VON {totalWeeks}
-            </p>
-            {currentBlock?.blockName && (
-              <Badge className="mt-2 bg-primary/20 text-primary">{currentBlock.blockName}</Badge>
-            )}
-            {currentWeekData?.weekGoal && (
-              <p className="mt-2 text-sm text-muted-foreground">{currentWeekData.weekGoal}</p>
-            )}
+            {/* Countdown */}
+            <div className="flex flex-col gap-1">
+              <Flag className="h-4 w-4 text-primary" />
+              {daysUntilRace !== null && daysUntilRace > 0 ? (
+                <>
+                  <p className="text-xl font-black text-foreground">{daysUntilRace}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground truncate">
+                    Tage bis {p?.raceName || "Race Day"}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xl font-black text-primary">🏁</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Geschafft
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Aktuelle Phase */}
+            <div className="flex flex-col gap-1">
+              <Zap className="h-4 w-4 text-primary" />
+              <p className="text-xl font-black text-foreground truncate">
+                {currentBlock?.blockName || "—"}
+              </p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground truncate" title={currentBlock?.blockGoal}>
+                {currentBlock?.blockGoal
+                  ? currentBlock.blockGoal.length > 60
+                    ? currentBlock.blockGoal.substring(0, 60) + "…"
+                    : currentBlock.blockGoal
+                  : "Aktuelle Phase"}
+              </p>
+            </div>
+
+            {/* Sessions diese Woche */}
+            <div className="flex flex-col gap-1">
+              <CalendarIcon className="h-4 w-4 text-primary" />
+              <p className="text-xl font-black text-foreground">
+                {weekSessionCount}
+              </p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Einheiten / Woche
+              </p>
+            </div>
           </CardContent>
         </Card>
 
