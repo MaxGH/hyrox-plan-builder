@@ -233,17 +233,41 @@ export default function TrainingPlan() {
               Deine Trainingszonen
             </h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {Object.entries(zones).map(([key, value]) => (
-                <div
-                  key={key}
-                  className={`rounded-lg p-4 text-center ${ZONE_COLORS[key] || "bg-secondary text-secondary-foreground"}`}
-                >
-                  <p className="text-xs font-bold uppercase tracking-wider opacity-80">
-                    {ZONE_LABELS[key] || key}
-                  </p>
-                  <p className="mt-1 text-lg font-black">{value}</p>
-                </div>
-              ))}
+              {Object.entries(zones).map(([key, value]) => {
+                if (key === "racePace") {
+                  const targetMin = (plan.plan as any)?.trainingZones?.targetRacePaceMin || (plan as any)?.trainingZones?.targetRacePaceMin;
+                  const targetMax = (plan.plan as any)?.trainingZones?.targetRacePaceMax || (plan as any)?.trainingZones?.targetRacePaceMax;
+                  const targetNote = (plan.plan as any)?.trainingZones?.targetRacePaceNote || (plan as any)?.trainingZones?.targetRacePaceNote;
+                  return (
+                    <div
+                      key={key}
+                      className="rounded-lg p-4 text-center"
+                      style={{ backgroundColor: "#00B4FF", color: "#fff" }}
+                    >
+                      <p className="text-xs font-bold uppercase tracking-wider opacity-90">
+                        ZIEL RACE PACE
+                      </p>
+                      <p className="mt-1 text-lg font-black">
+                        {targetMin ? `${targetMin} – ${targetMax}` : value}
+                      </p>
+                      {targetNote && (
+                        <p className="mt-0.5 text-[11px] opacity-80">{targetNote}</p>
+                      )}
+                    </div>
+                  );
+                }
+                return (
+                  <div
+                    key={key}
+                    className={`rounded-lg p-4 text-center ${ZONE_COLORS[key] || "bg-secondary text-secondary-foreground"}`}
+                  >
+                    <p className="text-xs font-bold uppercase tracking-wider opacity-80">
+                      {ZONE_LABELS[key] || key}
+                    </p>
+                    <p className="mt-1 text-lg font-black">{value}</p>
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}
