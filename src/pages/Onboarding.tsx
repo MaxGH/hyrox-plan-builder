@@ -13,7 +13,7 @@ import StepRunningFitness from "@/components/onboarding/StepRunningFitness";
 import StepLifestyle from "@/components/onboarding/StepLifestyle";
 import StepRaceGoal from "@/components/onboarding/StepRaceGoal";
 import StepRaceHistory from "@/components/onboarding/StepRaceHistory";
-import { N8N_WEBHOOK_URL } from "@/config/api";
+
 import { type OnboardingData, initialOnboardingData } from "@/components/onboarding/types";
 
 const TOTAL_STEPS = 7;
@@ -108,50 +108,33 @@ export default function Onboarding() {
     if (!validateStep() || !user) return;
     setSubmitting(true);
     try {
-      // 1. Insert pending row
-      const { error: dbError } = await supabase.from("training_plans").insert({
-        user_id: user.id,
-        status: "pending",
-        onboarding_data: data as any,
-      });
-      if (dbError) throw dbError;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error("Nicht eingeloggt");
 
-      // 2. POST to n8n webhook (fire-and-forget)
-      fetch(N8N_WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          onboarding: {
-            user_id: user.id,
-            name: data.name,
-            weight: data.weight,
-            height: data.height,
-            level: data.level,
-            experienceYears: data.experienceYears,
-            trainingDays: data.trainingDays,
-            sessionDuration: data.sessionDuration,
-            weaknesses: data.weaknesses,
-            strengths: data.strengths,
-            fiveKmTime: data.fiveKmTime,
-            runFrequency: data.runFrequency,
-            longestRecentRun: data.longestRecentRun,
-            trainingEnvironment: data.trainingEnvironment,
-            availableEquipment: data.availableEquipment,
-            avgSleepHours: data.avgSleepHours,
-            stressLevel: data.stressLevel,
-            goalTime: data.goalTime,
-            raceName: data.raceName,
-            raceDate: data.raceDate,
-            startDate: data.startDate,
-            hasRaceExperience: data.hasRaceExperience,
-            previousRaceTime: data.previousRaceTime,
-            previousRaceWeaknesses: data.previousRaceWeaknesses,
-            previousRaceSplits: data.previousRaceSplits,
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-plan`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
           },
-        }),
-      });
+          body: JSON.stringify({ onboarding: { ...data, user_id: user.id } }),
+        }
+      );
 
-      // 3. Navigate immediately
+      if (response.status === 429) {
+        const err = await response.json();
+        setSubmitting(false);
+        toast({ variant: "destructive", title: "Nicht möglich", description: err.error });
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Plan-Generierung fehlgeschlagen");
+      }
+
       navigate("/generating");
     } catch (err: any) {
       setSubmitting(false);
