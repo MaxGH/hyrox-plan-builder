@@ -232,30 +232,10 @@ export default function TrainingPlan() {
             <h2 className="mb-4 text-lg font-black uppercase tracking-wider text-foreground">
               Deine Trainingszonen
             </h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {Object.entries(zones).map(([key, value]) => {
-                if (key === "racePace") {
-                  const targetMin = (plan.plan as any)?.trainingZones?.targetRacePaceMin || (plan as any)?.trainingZones?.targetRacePaceMin;
-                  const targetMax = (plan.plan as any)?.trainingZones?.targetRacePaceMax || (plan as any)?.trainingZones?.targetRacePaceMax;
-                  const targetNote = (plan.plan as any)?.trainingZones?.targetRacePaceNote || (plan as any)?.trainingZones?.targetRacePaceNote;
-                  return (
-                    <div
-                      key={key}
-                      className="rounded-lg p-4 text-center"
-                      style={{ backgroundColor: "#00B4FF", color: "#fff" }}
-                    >
-                      <p className="text-xs font-bold uppercase tracking-wider opacity-90">
-                        ZIEL RACE PACE
-                      </p>
-                      <p className="mt-1 text-lg font-black">
-                        {targetMin ? `${targetMin} – ${targetMax}` : value}
-                      </p>
-                      {targetNote && (
-                        <p className="mt-0.5 text-[11px] opacity-80">{targetNote}</p>
-                      )}
-                    </div>
-                  );
-                }
+                if (key === "racePace") return null;
+                if (key === "targetRacePaceMin" || key === "targetRacePaceMax" || key === "targetRacePaceNote") return null;
                 return (
                   <div
                     key={key}
@@ -268,6 +248,26 @@ export default function TrainingPlan() {
                   </div>
                 );
               })}
+              {/* Aktuelle Race Pace */}
+              {zones.racePace && (
+                <div className="rounded-lg p-4 text-center" style={{ backgroundColor: "#00FF87", color: "#000" }}>
+                  <p className="text-xs font-bold uppercase tracking-wider opacity-80">AKTUELLE RACE PACE</p>
+                  <p className="mt-1 text-lg font-black">{zones.racePace}</p>
+                  <p className="mt-0.5 text-[11px] opacity-70">Basis: deine 5km Bestzeit</p>
+                </div>
+              )}
+              {/* Ziel Race Pace */}
+              <div className="rounded-lg p-4 text-center" style={{ backgroundColor: "#00B4FF", color: "#fff" }}>
+                <p className="text-xs font-bold uppercase tracking-wider opacity-90">ZIEL RACE PACE</p>
+                <p className="mt-1 text-lg font-black">
+                  {(zones as any).targetRacePaceMin
+                    ? `${(zones as any).targetRacePaceMin} – ${(zones as any).targetRacePaceMax}`
+                    : zones.racePace || "—"}
+                </p>
+                <p className="mt-0.5 text-[11px] opacity-80">
+                  {(zones as any).targetRacePaceNote || ((zones as any).targetRacePaceMin ? "Basis: deine Zielzeit" : "Plan neu generieren")}
+                </p>
+              </div>
             </div>
           </section>
         )}
