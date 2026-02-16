@@ -62,4 +62,14 @@
   .text-glow {
     text-shadow: 0 0 20px hsl(153 100% 49% / 0.4), 0 0 40px hsl(153 100% 49% / 0.2);
   }
+
+  .animate-indeterminate {
+    animation: indeterminate 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(200%); }
+  100% { transform: translateX(-100%); }
 }
