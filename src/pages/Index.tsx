@@ -30,6 +30,6 @@ export default function Index() {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
-  if (hasPlan) return <Navigate to="/plan" replace />;
+  if (hasPlan) return <Navigate to="/dashboard" replace />;
   return <Navigate to="/onboarding" replace />;
 }
