@@ -8,6 +8,8 @@ import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import GeneratingPlan from "./pages/GeneratingPlan";
 import TrainingPlan from "./pages/TrainingPlan";
+import Dashboard from "./pages/Dashboard";
+import Calendar from "./pages/Calendar";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -43,6 +45,22 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <TrainingPlan />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/calendar"
+            element={
+              <ProtectedRoute>
+                <Calendar />
               </ProtectedRoute>
             }
           />

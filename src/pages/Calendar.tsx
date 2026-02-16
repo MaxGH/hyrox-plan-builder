@@ -1,0 +1,365 @@
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Zap, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import BottomNav from "@/components/BottomNav";
+
+interface Exercise {
+  name?: string;
+  sets?: number;
+  reps?: string | number;
+  zone?: string;
+  notes?: string;
+  distance?: string;
+  duration?: string;
+  pace?: string;
+  weight?: string;
+}
+
+interface Session {
+  sessionId?: string;
+  dayOfWeek?: string;
+  sessionType?: string;
+  focus?: string;
+  durationMin?: number;
+  durationMinutes?: number;
+  exercises?: Exercise[];
+  mainBlock?: Exercise[];
+}
+
+interface Week {
+  weekNumber?: number;
+  weekGoal?: string;
+  isDeloadWeek?: boolean;
+  coachNote?: string;
+  sessions?: Session[];
+}
+
+interface Block {
+  blockNumber?: number;
+  blockName?: string;
+  weekStart?: number;
+  weekEnd?: number;
+  weeks?: Week[];
+}
+
+interface PlanShape {
+  plan?: {
+    raceDate?: string;
+    totalWeeks?: number;
+    blocks?: Block[];
+  };
+}
+
+const DOW_SHORT = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+const DOW_GERMAN: Record<string, number> = {
+  Sonntag: 0, Montag: 1, Dienstag: 2, Mittwoch: 3,
+  Donnerstag: 4, Freitag: 5, Samstag: 6,
+};
+
+const SESSION_TYPE_LABELS: Record<string, string> = {
+  combo: "Kombi", run: "Lauf", strength: "Kraft",
+  hyrox: "HYROX", recovery: "Recovery", race: "Wettkampf",
+};
+
+const ZONE_COLORS: Record<string, string> = {
+  zone1: "bg-muted text-muted-foreground",
+  zone2: "bg-blue-900/40 text-blue-300",
+  zone3: "bg-yellow-900/40 text-yellow-300",
+  zone4: "bg-orange-900/40 text-orange-300",
+  zone5: "bg-red-900/40 text-red-300",
+  racePace: "bg-primary text-primary-foreground",
+};
+
+const ZONE_LABELS: Record<string, string> = {
+  zone1: "Zone 1", zone2: "Zone 2", zone3: "Zone 3",
+  zone4: "Zone 4", zone5: "Zone 5", racePace: "Race Pace",
+};
+
+export default function Calendar() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [planData, setPlanData] = useState<PlanShape | null>(null);
+  const [onboardingData, setOnboardingData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [viewWeek, setViewWeek] = useState<number>(1);
+  const [selectedDow, setSelectedDow] = useState<number>(new Date().getDay());
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("training_plans")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("status", "ready")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.plan_data) setPlanData(data.plan_data as unknown as PlanShape);
+        if (data?.onboarding_data) setOnboardingData(data.onboarding_data);
+        setLoading(false);
+      });
+  }, [user]);
+
+  const p = planData?.plan;
+  const totalWeeks = p?.totalWeeks || 1;
+  const blocks = p?.blocks || [];
+
+  const startDate = useMemo(() => {
+    const raw = onboardingData?.startDate || (planData as any)?.onboarding_data?.startDate;
+    return raw ? new Date(raw) : null;
+  }, [onboardingData, planData]);
+
+  const currentWeek = useMemo(() => {
+    if (!startDate) return 1;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Math.max(1, Math.ceil((today.getTime() - startDate.getTime()) / (7 * 86400000)));
+  }, [startDate]);
+
+  // Set initial viewWeek to current
+  useEffect(() => {
+    setViewWeek(Math.min(currentWeek, totalWeeks));
+  }, [currentWeek, totalWeeks]);
+
+  const currentBlock = useMemo(() => {
+    return blocks.find(b => viewWeek >= (b.weekStart || 0) && viewWeek <= (b.weekEnd || 0)) || blocks[0];
+  }, [blocks, viewWeek]);
+
+  const weekData = useMemo(() => {
+    return currentBlock?.weeks?.find(w => w.weekNumber === viewWeek);
+  }, [currentBlock, viewWeek]);
+
+  const sessions = weekData?.sessions || [];
+
+  // Get dates for the view week
+  const weekDates = useMemo(() => {
+    if (!startDate) return [];
+    const weekStart = new Date(startDate);
+    weekStart.setDate(weekStart.getDate() + (viewWeek - 1) * 7);
+    // Align to Monday
+    const day = weekStart.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+    weekStart.setDate(weekStart.getDate() + mondayOffset);
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + i);
+      return d;
+    });
+  }, [startDate, viewWeek]);
+
+  const sessionForDay = useMemo(() => {
+    return sessions.find(s => DOW_GERMAN[s.dayOfWeek || ""] === selectedDow) || null;
+  }, [sessions, selectedDow]);
+
+  const sessionDays = useMemo(() => {
+    return new Set(sessions.map(s => DOW_GERMAN[s.dayOfWeek || ""]));
+  }, [sessions]);
+
+  const canGoPrev = viewWeek > 1;
+  const canGoNext = viewWeek < totalWeeks;
+
+  if (loading || authLoading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+        <Zap className="h-16 w-16 animate-pulse text-primary drop-shadow-[0_0_24px_hsl(var(--primary)/0.6)]" />
+      </div>
+    );
+  }
+
+  if (!planData) {
+    navigate("/onboarding");
+    return null;
+  }
+
+  const exercises = sessionForDay?.exercises || sessionForDay?.mainBlock || [];
+
+  return (
+    <div className="min-h-screen bg-background pb-20">
+      <header className="px-4 pt-6 pb-2 sm:px-8">
+        <p className="text-sm font-black uppercase tracking-widest text-foreground">
+          HYROX<span className="text-primary text-glow"> COACH</span>
+        </p>
+      </header>
+
+      <main className="mx-auto max-w-lg px-4 sm:px-8">
+        {/* Week nav */}
+        <div className="flex items-center justify-between py-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={!canGoPrev}
+            onClick={() => setViewWeek(v => v - 1)}
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <div className="text-center">
+            <p className="text-lg font-black uppercase tracking-wider text-foreground">
+              Woche {viewWeek}
+            </p>
+            {currentBlock?.blockName && (
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                {currentBlock.blockName}
+              </p>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={!canGoNext}
+            onClick={() => setViewWeek(v => v + 1)}
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Day strip */}
+        <div className="flex justify-between gap-1 rounded-xl bg-card p-2">
+          {weekDates.length > 0
+            ? weekDates.map((date, i) => {
+                const dow = date.getDay();
+                const isActive = dow === selectedDow;
+                const hasSession = sessionDays.has(dow);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedDow(dow)}
+                    className={cn(
+                      "relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-2 text-xs font-bold transition-colors",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-secondary"
+                    )}
+                  >
+                    <span className="uppercase">{DOW_SHORT[dow]}</span>
+                    <span className={cn("text-sm", isActive ? "text-primary-foreground" : "text-foreground")}>
+                      {date.getDate()}
+                    </span>
+                    {hasSession && !isActive && (
+                      <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary" />
+                    )}
+                  </button>
+                );
+              })
+            : DOW_SHORT.slice(1).concat(DOW_SHORT.slice(0, 1)).map((label, i) => {
+                const dow = i === 6 ? 0 : i + 1;
+                const isActive = dow === selectedDow;
+                const hasSession = sessionDays.has(dow);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedDow(dow)}
+                    className={cn(
+                      "relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-2 text-xs font-bold transition-colors",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-secondary"
+                    )}
+                  >
+                    <span className="uppercase">{label}</span>
+                    {hasSession && !isActive && (
+                      <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary" />
+                    )}
+                  </button>
+                );
+              })}
+        </div>
+
+        {/* Day detail */}
+        <div className="mt-4 space-y-4">
+          {sessionForDay ? (
+            <>
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CardTitle className="text-base font-black uppercase text-foreground">
+                      {sessionForDay.dayOfWeek}
+                    </CardTitle>
+                    {sessionForDay.sessionType && (
+                      <Badge className="bg-primary text-primary-foreground text-xs uppercase">
+                        {SESSION_TYPE_LABELS[sessionForDay.sessionType] || sessionForDay.sessionType}
+                      </Badge>
+                    )}
+                    {(sessionForDay.durationMin || sessionForDay.durationMinutes) && (
+                      <span className="text-xs text-muted-foreground">
+                        {sessionForDay.durationMin || sessionForDay.durationMinutes} Min
+                      </span>
+                    )}
+                  </div>
+                  {sessionForDay.focus && (
+                    <p className="mt-1 text-sm text-muted-foreground">{sessionForDay.focus}</p>
+                  )}
+                </CardHeader>
+              </Card>
+
+              {/* Coach note */}
+              {weekData?.coachNote && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                  <p className="text-sm italic text-foreground/80">💬 {weekData.coachNote}</p>
+                </div>
+              )}
+
+              {/* Exercises */}
+              {exercises.length > 0 && (
+                <Card className="border-border bg-card">
+                  <CardContent className="pt-4">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
+                            <th className="pb-2 pr-3 font-medium">Übung</th>
+                            <th className="pb-2 pr-3 font-medium">Sets</th>
+                            <th className="pb-2 pr-3 font-medium">Reps</th>
+                            <th className="pb-2 pr-3 font-medium">Zone</th>
+                            <th className="hidden pb-2 font-medium sm:table-cell">Notizen</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {exercises.map((ex, i) => (
+                            <tr key={i} className="border-b border-border/50 last:border-0">
+                              <td className="py-2 pr-3 font-medium text-foreground">{ex.name || "—"}</td>
+                              <td className="py-2 pr-3 text-muted-foreground">{ex.sets || "—"}</td>
+                              <td className="py-2 pr-3 text-muted-foreground">{ex.reps || ex.distance || "—"}</td>
+                              <td className="py-2 pr-3">
+                                {ex.zone ? (
+                                  <Badge className={cn("text-xs", ZONE_COLORS[ex.zone] || "bg-secondary text-secondary-foreground")}>
+                                    {ZONE_LABELS[ex.zone] || ex.zone}
+                                  </Badge>
+                                ) : (
+                                  "—"
+                                )}
+                              </td>
+                              <td className="hidden py-2 text-xs text-muted-foreground sm:table-cell">
+                                {ex.notes || "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <Card className="border-border bg-card">
+              <CardContent className="py-12 text-center">
+                <p className="text-2xl font-black uppercase text-foreground">RUHETAG</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Erholung ist genauso wichtig wie das Training selbst. Nutze den Tag zur Regeneration.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </main>
+
+      <BottomNav />
+    </div>
+  );
+}
