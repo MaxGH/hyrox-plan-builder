@@ -2,19 +2,38 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { Zap } from "lucide-react";
 
-const TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+const MESSAGES = [
+  "Dein KI Coach analysiert deine Trainingsdaten…",
+  "Laufpace, Stationssplits und Erholung werden berechnet…",
+  "Ein professioneller Trainingsplan braucht Zeit. Wir bauen ihn gerade für dich.",
+  "Deine Schwächen werden gezielt adressiert…",
+  "Trainingsblöcke, Deload-Wochen und Peaking werden strukturiert…",
+  "Fast fertig — dein Plan nimmt Form an.",
+];
 
 export default function GeneratingPlan() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [timedOut, setTimedOut] = useState(false);
-  const [retrying, setRetrying] = useState(false);
+  const [messageIndex, setMessageIndex] = useState(0);
 
+  const checkPlanReady = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("training_plans")
+      .select("status")
+      .eq("user_id", user.id)
+      .eq("status", "ready")
+      .maybeSingle();
+    if (data) navigate("/plan");
+  }, [user, navigate]);
+
+  // Initial check + realtime + polling fallback
   useEffect(() => {
     if (!user) return;
+
+    checkPlanReady();
 
     const channel = supabase
       .channel("plan-ready")
@@ -27,66 +46,43 @@ export default function GeneratingPlan() {
           filter: `user_id=eq.${user.id}`,
         },
         (payload: any) => {
-          if (payload.new.status === "ready") {
-            navigate("/plan");
-          }
+          if (payload.new.status === "ready") navigate("/plan");
         }
       )
       .subscribe();
 
-    const timer = setTimeout(() => setTimedOut(true), TIMEOUT_MS);
+    const interval = setInterval(checkPlanReady, 30_000);
 
     return () => {
-      clearTimeout(timer);
+      clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [user, navigate]);
+  }, [user, navigate, checkPlanReady]);
 
-  const handleRetry = useCallback(async () => {
-    if (!user) return;
-    setRetrying(true);
-    await supabase.from("training_plans").delete().eq("user_id", user.id);
-    navigate("/onboarding");
-  }, [user, navigate]);
-
-  if (timedOut) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
-        <Zap className="mb-6 h-16 w-16 text-destructive" />
-        <h1 className="text-2xl font-black uppercase tracking-wider text-foreground">
-          Das hat länger gedauert als erwartet.
-        </h1>
-        <p className="mt-3 text-muted-foreground">
-          Etwas ist schiefgelaufen. Bitte versuche es erneut.
-        </p>
-        <Button
-          onClick={handleRetry}
-          disabled={retrying}
-          className="mt-8 px-8 py-6 text-lg font-bold uppercase tracking-wider"
-        >
-          {retrying ? "Wird gelöscht…" : "Erneut versuchen"}
-        </Button>
-      </div>
+  // Rotate messages every 8s
+  useEffect(() => {
+    const timer = setInterval(
+      () => setMessageIndex((i) => (i + 1) % MESSAGES.length),
+      8000
     );
-  }
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
-      {/* Pulsing icon */}
       <div className="mb-8 animate-pulse">
         <Zap className="h-20 w-20 text-primary drop-shadow-[0_0_24px_hsl(var(--primary)/0.6)]" />
       </div>
 
-      <h1 className="text-3xl font-black uppercase tracking-wider text-foreground">
-        Dein Plan wird erstellt
-      </h1>
-
-      <p className="mx-auto mt-4 max-w-md text-muted-foreground">
-        Unser AI Coach analysiert deine Daten und baut deinen persönlichen
-        Trainingsplan. Das dauert ca. 30–60 Sekunden.
+      <p className="mx-auto max-w-lg text-2xl font-bold tracking-wide text-foreground transition-opacity duration-700">
+        {MESSAGES[messageIndex]}
       </p>
 
-      {/* Indeterminate progress bar */}
+      <p className="mx-auto mt-6 max-w-md text-sm text-muted-foreground">
+        Unsere KI erstellt deinen Plan mit professioneller Präzision. Das kann
+        1–3 Minuten dauern.
+      </p>
+
       <div className="mt-10 h-1.5 w-64 overflow-hidden rounded-full bg-muted">
         <div className="h-full w-1/3 animate-indeterminate rounded-full bg-primary" />
       </div>
