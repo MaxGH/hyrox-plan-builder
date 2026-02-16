@@ -15,12 +15,11 @@ export interface OnboardingData {
   fiveKmTime: string;
   runFrequency: string;
   longestRecentRun: number | "";
-  strengths: string;
-  weaknesses: string;
+  strengths: string[];
+  weaknesses: string[];
   // Step 5
   avgSleepHours: number;
   stressLevel: number;
-  otherSports: string;
   // Step 6
   raceName: string;
   raceDate: Date | undefined;
@@ -56,11 +55,10 @@ export const initialOnboardingData: OnboardingData = {
   fiveKmTime: "",
   runFrequency: "",
   longestRecentRun: "",
-  strengths: "",
-  weaknesses: "",
+  strengths: [],
+  weaknesses: [],
   avgSleepHours: 7,
   stressLevel: 5,
-  otherSports: "",
   raceName: "",
   raceDate: undefined,
   startDate: undefined,
