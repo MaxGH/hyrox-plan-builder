@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Zap, ChevronLeft, ChevronRight, GripVertical, Undo2, Check } from "lucide-react";
+import { Zap, ChevronLeft, ChevronRight, GripVertical, Undo2, Check, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "@/hooks/use-toast";
@@ -567,8 +567,60 @@ export default function Calendar() {
     },
     [overrides, persistOverrides]
   );
+  // --- Reset week overrides ---
+  const weekHasOverrides = useMemo(() => {
+    if (weekDates.length === 0) return false;
+    const mondayStr = toDateStr(weekDates[0]);
+    const sundayStr = toDateStr(weekDates[6]);
 
-  // --- Render ---
+    return allSessionsWithDates.some((entry) => {
+      const sid = entry.session.sessionId || "";
+      if (!overrides[sid]) return false;
+      // Override points INTO this week
+      if (overrides[sid] >= mondayStr && overrides[sid] <= sundayStr) return true;
+      // Original date is in this week but overridden AWAY
+      if (entry.originalDate >= mondayStr && entry.originalDate <= sundayStr) return true;
+      return false;
+    });
+  }, [allSessionsWithDates, overrides, weekDates]);
+
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  const handleResetWeek = useCallback(async () => {
+    if (weekDates.length === 0 || !user) return;
+    const mondayStr = toDateStr(weekDates[0]);
+    const sundayStr = toDateStr(weekDates[6]);
+
+    const affectedIds: string[] = [];
+    allSessionsWithDates.forEach((entry) => {
+      const sid = entry.session.sessionId || "";
+      if (!overrides[sid]) return;
+      if (overrides[sid] >= mondayStr && overrides[sid] <= sundayStr) {
+        affectedIds.push(sid);
+      } else if (entry.originalDate >= mondayStr && entry.originalDate <= sundayStr) {
+        affectedIds.push(sid);
+      }
+    });
+
+    const oldOverrides = { ...overrides };
+    const newOverrides = { ...overrides };
+    affectedIds.forEach((id) => delete newOverrides[id]);
+
+    setOverrides(newOverrides);
+    setShowResetConfirm(false);
+
+    const ok = await persistOverrides(newOverrides);
+    if (!ok) {
+      setOverrides(oldOverrides);
+      toast({
+        title: "Fehler",
+        description: "Woche konnte nicht zurückgesetzt werden.",
+        variant: "destructive",
+      });
+    }
+  }, [weekDates, allSessionsWithDates, overrides, user, persistOverrides]);
+
+
 
   if (loading || authLoading) {
     return (
@@ -612,6 +664,31 @@ export default function Calendar() {
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
+
+          {/* Reset week button */}
+          {weekHasOverrides && (
+            <div className="relative">
+              {!showResetConfirm ? (
+                <button
+                  onClick={() => setShowResetConfirm(true)}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Woche zurücksetzen
+                </button>
+              ) : (
+                <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-foreground">Alle Verschiebungen dieser Woche zurücksetzen?</p>
+                  <Button size="sm" variant="destructive" onClick={handleResetWeek} className="text-xs h-7">
+                    Ja, zurücksetzen
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowResetConfirm(false)} className="text-xs h-7">
+                    Abbrechen
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Day strip */}
           <div className="flex justify-between gap-1 rounded-xl bg-card p-2">
