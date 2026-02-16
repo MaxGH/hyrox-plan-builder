@@ -29,16 +29,16 @@ interface SessionLogCardProps {
 }
 
 const RPE_COLORS: Record<number, string> = {
-  1: "bg-muted text-muted-foreground",
-  2: "bg-muted text-muted-foreground",
-  3: "bg-muted text-muted-foreground",
-  4: "bg-yellow-900/40 text-yellow-300",
-  5: "bg-yellow-900/40 text-yellow-300",
-  6: "bg-yellow-900/40 text-yellow-300",
-  7: "bg-orange-900/40 text-orange-300",
-  8: "bg-orange-900/40 text-orange-300",
-  9: "bg-red-900/40 text-red-300",
-  10: "bg-red-900/40 text-red-300",
+  1: "bg-secondary text-muted-foreground",
+  2: "bg-secondary text-muted-foreground",
+  3: "bg-secondary text-muted-foreground",
+  4: "bg-yellow-100 text-yellow-800",
+  5: "bg-yellow-100 text-yellow-800",
+  6: "bg-yellow-100 text-yellow-800",
+  7: "bg-orange-100 text-orange-800",
+  8: "bg-orange-100 text-orange-800",
+  9: "bg-red-100 text-red-800",
+  10: "bg-red-100 text-red-800",
 };
 
 export default function SessionLogCard({
@@ -120,11 +120,11 @@ export default function SessionLogCard({
 
   if (!completed) {
     return (
-      <div className="rounded-lg border-2 border-dashed border-muted p-4">
+      <div className="rounded-xl border border-dashed border-border p-4">
         <Button
           onClick={handleComplete}
           disabled={saving}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white uppercase tracking-wider font-bold"
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider font-bold rounded-full"
           size="lg"
         >
           <Check className="mr-2 h-5 w-5" />
@@ -135,10 +135,10 @@ export default function SessionLogCard({
   }
 
   return (
-    <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-4 space-y-4">
+    <div className="rounded-xl border border-primary/20 bg-green-50 p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Badge className="bg-emerald-600 text-white">
+        <Badge className="bg-primary text-primary-foreground">
           <Check className="mr-1 h-3 w-3" /> Erledigt
         </Badge>
         <button
@@ -152,7 +152,7 @@ export default function SessionLogCard({
 
       {/* RPE Selector */}
       <div>
-        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-2">
           Wie anstrengend war es? (RPE)
         </p>
         <div className="flex gap-1">
@@ -162,7 +162,7 @@ export default function SessionLogCard({
               onClick={() => handleRpeSelect(v)}
               disabled={saving}
               className={cn(
-                "flex-1 rounded-md py-1.5 text-xs font-bold transition-all",
+                "flex-1 rounded-lg py-1.5 text-xs font-bold transition-all",
                 rpe === v
                   ? RPE_COLORS[v]
                   : "bg-card text-muted-foreground hover:bg-secondary border border-border"
@@ -181,7 +181,7 @@ export default function SessionLogCard({
           onChange={(e) => setNotes(e.target.value.slice(0, 200))}
           onBlur={handleNotesBlur}
           placeholder="Notiz zur Einheit… (optional)"
-          className="resize-none text-sm"
+          className="resize-none text-sm bg-card"
           rows={2}
         />
         <p className="text-right text-[10px] text-muted-foreground mt-1">

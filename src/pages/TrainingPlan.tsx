@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/accordion";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Zap, LogOut, RefreshCw, Trophy, Clock, Dumbbell } from "lucide-react";
+import BottomNav from "@/components/BottomNav";
+import TopNav from "@/components/TopNav";
 
 interface Exercise {
   name?: string;
@@ -89,13 +91,13 @@ const ZONE_LABELS: Record<string, string> = {
   racePace: "Race Pace",
 };
 
-const ZONE_COLORS: Record<string, string> = {
-  zone1: "bg-muted text-muted-foreground",
-  zone2: "bg-secondary text-secondary-foreground",
-  zone3: "bg-primary/20 text-primary",
-  zone4: "bg-primary/40 text-primary",
-  zone5: "bg-primary/70 text-primary-foreground",
-  racePace: "bg-primary text-primary-foreground",
+const ZONE_BORDER_COLORS: Record<string, string> = {
+  zone1: "border-l-gray-400",
+  zone2: "border-l-blue-400",
+  zone3: "border-l-yellow-400",
+  zone4: "border-l-orange-400",
+  zone5: "border-l-red-400",
+  racePace: "border-l-primary",
 };
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
@@ -154,9 +156,7 @@ export default function TrainingPlan() {
   if (loading || authLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-        <div className="animate-pulse">
-          <Zap className="h-16 w-16 text-primary drop-shadow-[0_0_24px_hsl(var(--primary)/0.6)]" />
-        </div>
+        <Zap className="h-16 w-16 animate-pulse text-primary" />
         <p className="mt-4 text-muted-foreground">Plan wird geladen…</p>
       </div>
     );
@@ -168,7 +168,7 @@ export default function TrainingPlan() {
         <Zap className="mb-4 h-12 w-12 text-muted-foreground" />
         <h1 className="text-2xl font-bold text-foreground">Kein Plan gefunden</h1>
         <p className="mt-2 text-muted-foreground">Starte jetzt dein Onboarding und erstelle deinen Plan.</p>
-        <Button onClick={() => navigate("/onboarding")} className="mt-6 uppercase tracking-wider">
+        <Button onClick={() => navigate("/onboarding")} className="mt-6 uppercase tracking-wider bg-foreground text-background hover:bg-foreground/90 rounded-full">
           Zum Onboarding
         </Button>
       </div>
@@ -184,20 +184,18 @@ export default function TrainingPlan() {
   const hasExp = p?.hasRaceExperience ?? plan.hasRaceExperience;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
+      <TopNav />
+
       {/* Hero Header */}
       <header className="border-b border-border bg-card px-4 py-6 sm:px-8">
         <div className="mx-auto max-w-4xl">
-          <p className="text-sm font-black uppercase tracking-widest text-foreground">
-            HYROX<span className="text-primary text-glow"> COACH</span>
-          </p>
-
-          <h1 className="mt-4 text-3xl font-black uppercase tracking-wider text-foreground sm:text-4xl">
+          <h1 className="text-3xl font-extrabold uppercase tracking-wider text-foreground sm:text-4xl">
             {athleteName}
           </h1>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge className={category === "PRO" ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}>
+            <Badge variant="outline" className={category === "PRO" ? "border-primary text-primary" : "border-border text-muted-foreground"}>
               {category}
             </Badge>
             {hasExp !== undefined && (
@@ -229,7 +227,7 @@ export default function TrainingPlan() {
         {/* Training Zones */}
         {Object.keys(zones).length > 0 && (
           <section className="mb-10">
-            <h2 className="mb-4 text-lg font-black uppercase tracking-wider text-foreground">
+            <h2 className="mb-4 text-lg font-extrabold uppercase tracking-wider text-foreground">
               Deine Trainingszonen
             </h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -237,37 +235,43 @@ export default function TrainingPlan() {
                 if (key === "racePace") return null;
                 if (key === "targetRacePaceMin" || key === "targetRacePaceMax" || key === "targetRacePaceNote") return null;
                 return (
-                  <div
+                  <Card
                     key={key}
-                    className={`rounded-lg p-4 text-center ${ZONE_COLORS[key] || "bg-secondary text-secondary-foreground"}`}
+                    className={`card-shadow border-l-4 ${ZONE_BORDER_COLORS[key] || "border-l-border"}`}
                   >
-                    <p className="text-xs font-bold uppercase tracking-wider opacity-80">
-                      {ZONE_LABELS[key] || key}
-                    </p>
-                    <p className="mt-1 text-lg font-black">{value}</p>
-                  </div>
+                    <CardContent className="py-4 px-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                        {ZONE_LABELS[key] || key}
+                      </p>
+                      <p className="mt-1 text-lg font-extrabold text-foreground">{value}</p>
+                    </CardContent>
+                  </Card>
                 );
               })}
               {/* Aktuelle Race Pace */}
               {zones.racePace && (
-                <div className="rounded-lg p-4 text-center" style={{ backgroundColor: "#00FF87", color: "#000" }}>
-                  <p className="text-xs font-bold uppercase tracking-wider opacity-80">AKTUELLE RACE PACE</p>
-                  <p className="mt-1 text-lg font-black">{zones.racePace}</p>
-                  <p className="mt-0.5 text-[11px] opacity-70">Basis: deine 5km Bestzeit</p>
-                </div>
+                <Card className="card-shadow border-l-4 border-l-primary">
+                  <CardContent className="py-4 px-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">AKTUELLE RACE PACE</p>
+                    <p className="mt-1 text-lg font-extrabold text-foreground">{zones.racePace}</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">Basis: deine 5km Bestzeit</p>
+                  </CardContent>
+                </Card>
               )}
               {/* Ziel Race Pace */}
-              <div className="rounded-lg p-4 text-center" style={{ backgroundColor: "#00B4FF", color: "#fff" }}>
-                <p className="text-xs font-bold uppercase tracking-wider opacity-90">ZIEL RACE PACE</p>
-                <p className="mt-1 text-lg font-black">
-                  {(zones as any).targetRacePaceMin
-                    ? `${(zones as any).targetRacePaceMin} – ${(zones as any).targetRacePaceMax}`
-                    : zones.racePace || "—"}
-                </p>
-                <p className="mt-0.5 text-[11px] opacity-80">
-                  {(zones as any).targetRacePaceNote || ((zones as any).targetRacePaceMin ? "Basis: deine Zielzeit" : "Plan neu generieren")}
-                </p>
-              </div>
+              <Card className="card-shadow border-l-4 border-l-blue-400">
+                <CardContent className="py-4 px-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-600">ZIEL RACE PACE</p>
+                  <p className="mt-1 text-lg font-extrabold text-foreground">
+                    {(zones as any).targetRacePaceMin
+                      ? `${(zones as any).targetRacePaceMin} – ${(zones as any).targetRacePaceMax}`
+                      : zones.racePace || "—"}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {(zones as any).targetRacePaceNote || ((zones as any).targetRacePaceMin ? "Basis: deine Zielzeit" : "Plan neu generieren")}
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           </section>
         )}
@@ -282,10 +286,10 @@ export default function TrainingPlan() {
                     <button
                       key={block.blockNumber ?? i}
                       onClick={() => setActiveBlock(i)}
-                      className={`shrink-0 rounded-lg border px-4 py-2 text-sm font-bold uppercase tracking-wide transition-colors ${
+                      className={`shrink-0 rounded-full border px-5 py-2 text-sm font-bold uppercase tracking-wide transition-colors ${
                         i === activeBlock
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-card text-muted-foreground hover:border-primary/50"
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-border bg-card text-muted-foreground hover:border-foreground/30"
                       }`}
                     >
                       Block {block.blockNumber ?? i + 1}: {block.blockName || "—"}
@@ -300,7 +304,7 @@ export default function TrainingPlan() {
             {currentBlock && (
               <section>
                 <div className="mb-4">
-                  <h2 className="text-xl font-black uppercase tracking-wider text-foreground">
+                  <h2 className="text-xl font-extrabold uppercase tracking-wider text-foreground">
                     {currentBlock.blockName}
                   </h2>
                   {currentBlock.blockGoal && (
@@ -309,11 +313,13 @@ export default function TrainingPlan() {
                 </div>
 
                 {currentBlock.coachIntro && (
-                  <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
-                    <p className="text-sm italic text-foreground/80">
-                      💬 {currentBlock.coachIntro}
-                    </p>
-                  </div>
+                  <Card className="mb-6 card-shadow border-l-4 border-l-primary">
+                    <CardContent className="py-4">
+                      <p className="text-sm italic text-foreground/80">
+                        💬 {currentBlock.coachIntro}
+                      </p>
+                    </CardContent>
+                  </Card>
                 )}
 
                 {/* Weeks Accordion */}
@@ -362,21 +368,22 @@ export default function TrainingPlan() {
             onClick={handleRegenerate}
             disabled={deleting}
             variant="outline"
-            className="w-full max-w-xs uppercase tracking-wider"
+            className="w-full max-w-xs uppercase tracking-wider rounded-full"
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${deleting ? "animate-spin" : ""}`} />
             {deleting ? "Wird gelöscht…" : "Plan neu erstellen"}
           </Button>
-          <Button
+          <button
             onClick={signOut}
-            variant="ghost"
-            className="w-full max-w-xs uppercase tracking-wider text-muted-foreground"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mt-2"
           >
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
+            <LogOut className="h-4 w-4" />
+            Abmelden
+          </button>
         </footer>
       </main>
+
+      <BottomNav />
     </div>
   );
 }
@@ -389,7 +396,7 @@ function SessionCard({ session }: { session: Session }) {
   const type = session.sessionType ? SESSION_TYPE_LABELS[session.sessionType] || session.sessionType : null;
 
   return (
-    <Card className="border-border bg-card">
+    <Card className="card-shadow">
       <CardHeader className="pb-2">
         <div className="flex flex-wrap items-center gap-2">
           {session.dayOfWeek && (

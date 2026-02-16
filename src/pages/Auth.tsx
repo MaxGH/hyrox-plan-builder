@@ -20,10 +20,10 @@ export default function Auth() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
       <div className="mb-10 text-center">
-        <h1 className="text-4xl font-black uppercase tracking-widest text-foreground">
-          HYROX<span className="text-primary text-glow"> COACH</span>
+        <h1 className="text-4xl font-extrabold uppercase tracking-widest text-foreground">
+          HYROX<span className="text-primary"> COACH</span>
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">Your AI-powered training partner</p>
+        <p className="mt-2 text-sm text-muted-foreground">Dein KI-gestützter Trainingspartner</p>
       </div>
       <AuthForm />
     </div>

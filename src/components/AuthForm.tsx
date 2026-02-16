@@ -44,72 +44,74 @@ export default function AuthForm() {
 
   return (
     <div className="w-full max-w-sm space-y-6">
-      {/* Tab switcher */}
-      <div className="flex rounded-lg bg-secondary p-1">
-        <button
-          type="button"
-          onClick={() => setMode("login")}
-          className={`flex-1 rounded-md py-2 text-sm font-semibold uppercase tracking-wider transition-colors ${
-            mode === "login"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Log In
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("signup")}
-          className={`flex-1 rounded-md py-2 text-sm font-semibold uppercase tracking-wider transition-colors ${
-            mode === "signup"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          Sign Up
-        </button>
+      <div className="bg-card card-shadow rounded-2xl p-6 space-y-6 border border-border">
+        {/* Tab switcher */}
+        <div className="flex rounded-xl bg-secondary p-1">
+          <button
+            type="button"
+            onClick={() => setMode("login")}
+            className={`flex-1 rounded-lg py-2.5 text-sm font-semibold uppercase tracking-wider transition-colors ${
+              mode === "login"
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Log In
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("signup")}
+            className={`flex-1 rounded-lg py-2.5 text-sm font-semibold uppercase tracking-wider transition-colors ${
+              mode === "signup"
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Sign Up
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Email
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="athlete@example.com"
+              required
+              className="border-border bg-secondary text-foreground placeholder:text-muted-foreground focus:bg-card focus:ring-primary rounded-xl"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Password
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              minLength={6}
+              className="border-border bg-secondary text-foreground placeholder:text-muted-foreground focus:bg-card focus:ring-primary rounded-xl"
+            />
+          </div>
+
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full text-sm font-bold uppercase tracking-widest bg-foreground text-background hover:bg-foreground/90 rounded-full"
+          >
+            {loading ? "Loading…" : mode === "login" ? "Log In" : "Create Account"}
+          </Button>
+        </form>
       </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email" className="text-xs uppercase tracking-wider text-muted-foreground">
-            Email
-          </Label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="athlete@example.com"
-            required
-            className="border-border bg-secondary text-foreground placeholder:text-muted-foreground focus:ring-primary"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="password" className="text-xs uppercase tracking-wider text-muted-foreground">
-            Password
-          </Label>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            required
-            minLength={6}
-            className="border-border bg-secondary text-foreground placeholder:text-muted-foreground focus:ring-primary"
-          />
-        </div>
-
-        <Button
-          type="submit"
-          disabled={loading}
-          className="w-full text-sm font-bold uppercase tracking-widest"
-        >
-          {loading ? "Loading…" : mode === "login" ? "Log In" : "Create Account"}
-        </Button>
-      </form>
     </div>
   );
 }
