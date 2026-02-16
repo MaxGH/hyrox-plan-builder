@@ -1,7 +1,10 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, LogOut } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import ProgressBar from "@/components/onboarding/ProgressBar";
 import StepPersonalInfo from "@/components/onboarding/StepPersonalInfo";
 import StepExperience from "@/components/onboarding/StepExperience";
@@ -10,6 +13,7 @@ import StepRunningFitness from "@/components/onboarding/StepRunningFitness";
 import StepLifestyle from "@/components/onboarding/StepLifestyle";
 import StepRaceGoal from "@/components/onboarding/StepRaceGoal";
 import StepRaceHistory from "@/components/onboarding/StepRaceHistory";
+import { N8N_WEBHOOK_URL } from "@/config/api";
 import { type OnboardingData, initialOnboardingData } from "@/components/onboarding/types";
 
 const TOTAL_STEPS = 7;
@@ -59,10 +63,13 @@ const STEP_VALIDATIONS: Record<number, ValidationRule[]> = {
 };
 
 export default function Onboarding() {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [step, setStep] = useState(0);
   const [data, setData] = useState<OnboardingData>(initialOnboardingData);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   const updateData = useCallback((updates: Partial<OnboardingData>) => {
     setData((prev) => ({ ...prev, ...updates }));
@@ -97,9 +104,63 @@ export default function Onboarding() {
     if (step > 0) setStep(step - 1);
   };
 
-  const submit = () => {
-    if (!validateStep()) return;
-    console.log("📋 Onboarding Data:", JSON.stringify(data, null, 2));
+  const submit = async () => {
+    if (!validateStep() || !user) return;
+    setSubmitting(true);
+    try {
+      // 1. Insert pending row
+      const { error: dbError } = await supabase.from("training_plans").insert({
+        user_id: user.id,
+        status: "pending",
+        onboarding_data: data as any,
+      });
+      if (dbError) throw dbError;
+
+      // 2. POST to n8n webhook (fire-and-forget)
+      fetch(N8N_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          onboarding: {
+            user_id: user.id,
+            name: data.name,
+            weight: data.weight,
+            height: data.height,
+            level: data.level,
+            experienceYears: data.experienceYears,
+            trainingDays: data.trainingDays,
+            sessionDuration: data.sessionDuration,
+            weaknesses: data.weaknesses,
+            strengths: data.strengths,
+            fiveKmTime: data.fiveKmTime,
+            runFrequency: data.runFrequency,
+            longestRecentRun: data.longestRecentRun,
+            trainingEnvironment: data.trainingEnvironment,
+            availableEquipment: data.availableEquipment,
+            avgSleepHours: data.avgSleepHours,
+            stressLevel: data.stressLevel,
+            goalTime: data.goalTime,
+            raceName: data.raceName,
+            raceDate: data.raceDate,
+            startDate: data.startDate,
+            hasRaceExperience: data.hasRaceExperience,
+            previousRaceTime: data.previousRaceTime,
+            previousRaceWeaknesses: data.previousRaceWeaknesses,
+            previousRaceSplits: data.previousRaceSplits,
+          },
+        }),
+      });
+
+      // 3. Navigate immediately
+      navigate("/generating");
+    } catch (err: any) {
+      setSubmitting(false);
+      toast({
+        variant: "destructive",
+        title: "Fehler",
+        description: err.message || "Plan konnte nicht erstellt werden.",
+      });
+    }
   };
 
   const stepProps = { data, updateData, errors };
@@ -146,8 +207,8 @@ export default function Onboarding() {
               Next <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={submit} className="flex-1 uppercase tracking-wider font-bold text-lg py-6">
-              Create My Plan
+            <Button onClick={submit} disabled={submitting} className="flex-1 uppercase tracking-wider font-bold text-lg py-6">
+              {submitting ? "Wird erstellt…" : "Create My Plan"}
             </Button>
           )}
         </div>

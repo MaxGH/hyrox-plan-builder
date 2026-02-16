@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
+import GeneratingPlan from "./pages/GeneratingPlan";
 import TrainingPlan from "./pages/TrainingPlan";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -26,6 +27,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Onboarding />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/generating"
+            element={
+              <ProtectedRoute>
+                <GeneratingPlan />
               </ProtectedRoute>
             }
           />
