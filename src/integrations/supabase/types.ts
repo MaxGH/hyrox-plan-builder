@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      session_logs: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          plan_id: string
+          rpe: number | null
+          scheduled_date: string
+          session_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_id: string
+          rpe?: number | null
+          scheduled_date: string
+          session_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          plan_id?: string
+          rpe?: number | null
+          scheduled_date?: string
+          session_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_logs_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "training_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_plans: {
         Row: {
           created_at: string | null

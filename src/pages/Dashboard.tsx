@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Zap, Flag, CalendarDays } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import SessionLogCard, { type SessionLog } from "@/components/SessionLogCard";
+import { getSessionDate } from "@/lib/sessionDate";
 
 interface PlanData {
   plan?: {
@@ -23,6 +25,7 @@ interface PlanData {
         weekGoal?: string;
         isDeloadWeek?: boolean;
         sessions?: {
+          sessionId?: string;
           dayOfWeek?: string;
           sessionType?: string;
           focus?: string;
@@ -65,6 +68,9 @@ export default function Dashboard() {
   const [planData, setPlanData] = useState<PlanData | null>(null);
   const [onboardingData, setOnboardingData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [planId, setPlanId] = useState<string | null>(null);
+  const [todayLog, setTodayLog] = useState<SessionLog | null>(null);
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -77,6 +83,8 @@ export default function Dashboard() {
       .then(({ data }) => {
         if (data?.plan_data) setPlanData(data.plan_data as unknown as PlanData);
         if (data?.onboarding_data) setOnboardingData(data.onboarding_data);
+        if (data?.id) setPlanId(data.id);
+        setOverrides((data as any)?.session_overrides || {});
         setLoading(false);
       });
   }, [user]);
@@ -121,6 +129,33 @@ export default function Dashboard() {
     const sessions = currentWeekData?.sessions || [];
     return sessions.find(s => DAY_MAP[s.dayOfWeek || ""] === todayDow) || null;
   }, [currentWeekData, today]);
+
+  const todaySessionDate = useMemo(() => {
+    if (!todaySession || !startDate) return null;
+    const startStr = startDate.toISOString().substring(0, 10);
+    return getSessionDate(
+      { sessionId: todaySession.sessionId, dayOfWeek: todaySession.dayOfWeek },
+      currentWeek,
+      startStr,
+      overrides
+    );
+  }, [todaySession, startDate, currentWeek, overrides]);
+
+  // Load today's session log
+  useEffect(() => {
+    if (!user || !planId || !todaySession?.sessionId || !todaySessionDate) return;
+    supabase
+      .from("session_logs")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("plan_id", planId)
+      .eq("session_id", todaySession.sessionId)
+      .eq("scheduled_date", todaySessionDate)
+      .maybeSingle()
+      .then(({ data }) => {
+        setTodayLog(data as unknown as SessionLog | null);
+      });
+  }, [user, planId, todaySession?.sessionId, todaySessionDate]);
 
   if (loading || authLoading) {
     return (
@@ -265,6 +300,17 @@ export default function Dashboard() {
                     </Badge>
                   ))}
                 </div>
+                {planId && todaySessionDate && (
+                  <div className="mt-4">
+                    <SessionLogCard
+                      sessionId={todaySession.sessionId || ""}
+                      scheduledDate={todaySessionDate}
+                      planId={planId}
+                      existingLog={todayLog}
+                      onLogChange={(log) => setTodayLog(log)}
+                    />
+                  </div>
+                )}
                 <Button
                   onClick={() => navigate("/calendar")}
                   className="mt-4 w-full uppercase tracking-wider"

@@ -5,10 +5,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Zap, ChevronLeft, ChevronRight, GripVertical, Undo2 } from "lucide-react";
+import { Zap, ChevronLeft, ChevronRight, GripVertical, Undo2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
 import { toast } from "@/hooks/use-toast";
+import SessionLogCard, { type SessionLog } from "@/components/SessionLogCard";
 import {
   DndContext,
   DragOverlay,
@@ -271,6 +272,7 @@ function DroppableDayCell({
   dateNum,
   isActive,
   sessionCount,
+  completedCount,
   isOver,
   onClick,
 }: {
@@ -279,11 +281,14 @@ function DroppableDayCell({
   dateNum: number;
   isActive: boolean;
   sessionCount: number;
+  completedCount: number;
   isOver: boolean;
   onClick: () => void;
 }) {
   const { setNodeRef, isOver: dropOver } = useDroppable({ id: dateStr });
   const highlighted = isOver || dropOver;
+  const allDone = sessionCount > 0 && completedCount === sessionCount;
+  const someDone = completedCount > 0 && completedCount < sessionCount;
 
   return (
     <button
@@ -302,7 +307,15 @@ function DroppableDayCell({
       <span className={cn("text-sm", isActive ? "text-primary-foreground" : "text-foreground")}>
         {dateNum}
       </span>
-      {sessionCount > 0 && !isActive && (
+      {!isActive && allDone && (
+        <span className="absolute bottom-1">
+          <Check className="h-3 w-3 text-emerald-400" />
+        </span>
+      )}
+      {!isActive && someDone && (
+        <span className="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-emerald-400 ring-1 ring-emerald-400/30" />
+      )}
+      {!isActive && sessionCount > 0 && completedCount === 0 && (
         <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary" />
       )}
       {sessionCount > 1 && (
@@ -348,6 +361,8 @@ export default function Calendar() {
   const [viewWeek, setViewWeek] = useState<number>(1);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [logMap, setLogMap] = useState<Record<string, SessionLog>>({});
+  const [planId, setPlanId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -367,9 +382,30 @@ export default function Calendar() {
         if (data?.plan_data) setPlanData(data.plan_data as unknown as PlanShape);
         if (data?.onboarding_data) setOnboardingData(data.onboarding_data);
         setOverrides((data as any)?.session_overrides || {});
+        if (data?.id) setPlanId(data.id);
         setLoading(false);
       });
+
+    // Load session logs
+    supabase
+      .from("session_logs")
+      .select("*")
+      .eq("user_id", user.id)
+      .then(({ data: logs }) => {
+        const map: Record<string, SessionLog> = {};
+        logs?.forEach((log) => {
+          map[`${log.session_id}_${log.scheduled_date}`] = log as unknown as SessionLog;
+        });
+        setLogMap(map);
+      });
   }, [user]);
+
+  const handleLogChange = useCallback((log: SessionLog) => {
+    setLogMap((prev) => ({
+      ...prev,
+      [`${log.session_id}_${log.scheduled_date}`]: log,
+    }));
+  }, []);
 
   const p = planData?.plan;
   const totalWeeks = p?.totalWeeks || 1;
@@ -582,7 +618,11 @@ export default function Calendar() {
             {weekDates.map((date, i) => {
               const dateStr = toDateStr(date);
               const dow = date.getDay();
-              const count = sessionsForDate(dateStr).length;
+              const daySessions = sessionsForDate(dateStr);
+              const count = daySessions.length;
+              const completedCount = daySessions.filter(
+                (s) => logMap[`${s.session.sessionId}_${dateStr}`]?.completed
+              ).length;
               return (
                 <DroppableDayCell
                   key={dateStr}
@@ -591,6 +631,7 @@ export default function Calendar() {
                   dateNum={date.getDate()}
                   isActive={selectedDate === dateStr}
                   sessionCount={count}
+                  completedCount={completedCount}
                   isOver={false}
                   onClick={() => setSelectedDate(dateStr)}
                 />
@@ -608,12 +649,22 @@ export default function Calendar() {
                   </div>
                 )}
                 {selectedSessions.map((entry) => (
-                  <DraggableSessionCard
-                    key={entry.session.sessionId}
-                    session={entry.session}
-                    isOverridden={entry.isOverridden}
-                    onUndo={entry.isOverridden ? () => handleUndo(entry.session.sessionId || "") : undefined}
-                  />
+                  <div key={entry.session.sessionId} className="space-y-2">
+                    <DraggableSessionCard
+                      session={entry.session}
+                      isOverridden={entry.isOverridden}
+                      onUndo={entry.isOverridden ? () => handleUndo(entry.session.sessionId || "") : undefined}
+                    />
+                    {planId && (
+                      <SessionLogCard
+                        sessionId={entry.session.sessionId || ""}
+                        scheduledDate={entry.resolvedDate}
+                        planId={planId}
+                        existingLog={logMap[`${entry.session.sessionId}_${entry.resolvedDate}`] || null}
+                        onLogChange={handleLogChange}
+                      />
+                    )}
+                  </div>
                 ))}
               </>
             ) : (
