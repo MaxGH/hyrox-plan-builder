@@ -89,6 +89,18 @@ const SESSION_TYPE_LABELS: Record<string, string> = {
   hyrox: "HYROX", recovery: "Recovery", race: "Wettkampf",
 };
 
+const SESSION_TYPE_TITLES: Record<string, string> = {
+  combo: "Kombination", run: "Laufeinheit", strength: "Krafttraining", lauf: "Laufeinheit",
+  kraft: "Krafttraining", intervall: "Intervall-Training",
+  hyrox: "HYROX-Training", recovery: "Recovery", race: "Wettkampf",
+};
+
+function getSessionTitle(session: Session): string {
+  if (session.focus) return session.focus;
+  if (session.sessionType) return SESSION_TYPE_TITLES[session.sessionType] || session.sessionType;
+  return "Training";
+}
+
 const ZONE_COLORS: Record<string, string> = {
   zone1: "bg-muted text-muted-foreground",
   zone2: "bg-blue-900/40 text-blue-300",
@@ -170,25 +182,27 @@ function DraggableSessionCard({
           >
             <GripVertical className="h-4 w-4" />
           </button>
-          <div className="flex flex-wrap items-center gap-2 flex-1">
-            <CardTitle className="text-base font-black uppercase text-foreground">
-              {session.dayOfWeek}
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base font-black text-foreground truncate">
+              {getSessionTitle(session)}
             </CardTitle>
-            {session.sessionType && (
-              <Badge className="bg-primary text-primary-foreground text-xs uppercase">
-                {SESSION_TYPE_LABELS[session.sessionType] || session.sessionType}
-              </Badge>
-            )}
-            {isOverridden && (
-              <Badge variant="outline" className="text-xs border-primary/50 text-primary">
-                verschoben
-              </Badge>
-            )}
-            {(session.durationMin || session.durationMinutes) && (
-              <span className="text-xs text-muted-foreground">
-                {session.durationMin || session.durationMinutes} Min
-              </span>
-            )}
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              {session.sessionType && (
+                <Badge className="bg-primary text-primary-foreground text-xs uppercase">
+                  {SESSION_TYPE_LABELS[session.sessionType] || session.sessionType}
+                </Badge>
+              )}
+              {(session.durationMin || session.durationMinutes) && (
+                <Badge variant="outline" className="text-xs">
+                  {session.durationMin || session.durationMinutes} Min
+                </Badge>
+              )}
+              {isOverridden && (
+                <Badge variant="outline" className="text-xs border-primary/50 text-primary">
+                  verschoben
+                </Badge>
+              )}
+            </div>
           </div>
           {isOverridden && onUndo && (
             <button
@@ -199,8 +213,14 @@ function DraggableSessionCard({
             </button>
           )}
         </div>
-        {session.focus && (
-          <p className="mt-1 text-sm text-muted-foreground">{session.focus}</p>
+        {exercises.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {exercises.slice(0, 3).map((ex, i) => (
+              <Badge key={i} variant="secondary" className="text-xs font-normal">
+                {ex.name || "Übung"}
+              </Badge>
+            ))}
+          </div>
         )}
       </CardHeader>
       {exercises.length > 0 && (
@@ -302,8 +322,8 @@ function DragOverlayCard({ session }: { session: Session }) {
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4 text-primary" />
-          <CardTitle className="text-sm font-black uppercase text-foreground">
-            {session.dayOfWeek}
+          <CardTitle className="text-sm font-black text-foreground truncate">
+            {getSessionTitle(session)}
           </CardTitle>
           {session.sessionType && (
             <Badge className="bg-primary text-primary-foreground text-xs uppercase">
@@ -311,9 +331,6 @@ function DragOverlayCard({ session }: { session: Session }) {
             </Badge>
           )}
         </div>
-        {session.focus && (
-          <p className="mt-1 text-xs text-muted-foreground">{session.focus}</p>
-        )}
       </CardHeader>
     </Card>
   );

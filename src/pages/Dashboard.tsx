@@ -47,6 +47,18 @@ const SESSION_TYPE_LABELS: Record<string, string> = {
   hyrox: "HYROX", recovery: "Recovery", race: "Wettkampf",
 };
 
+const SESSION_TYPE_TITLES: Record<string, string> = {
+  combo: "Kombination", run: "Laufeinheit", strength: "Krafttraining", lauf: "Laufeinheit",
+  kraft: "Krafttraining", intervall: "Intervall-Training",
+  hyrox: "HYROX-Training", recovery: "Recovery", race: "Wettkampf",
+};
+
+function getSessionTitle(s: { focus?: string; sessionType?: string }): string {
+  if (s.focus) return s.focus;
+  if (s.sessionType) return SESSION_TYPE_TITLES[s.sessionType] || s.sessionType;
+  return "Training";
+}
+
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -231,27 +243,28 @@ export default function Dashboard() {
           <CardContent>
             {todaySession ? (
               <div>
-                <div className="flex flex-wrap items-center gap-2">
+                <p className="text-lg font-black text-foreground">
+                  {getSessionTitle(todaySession)}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
                   {todaySession.sessionType && (
                     <Badge className="bg-primary text-primary-foreground text-xs uppercase">
                       {SESSION_TYPE_LABELS[todaySession.sessionType] || todaySession.sessionType}
                     </Badge>
                   )}
                   {(todaySession.durationMin || todaySession.durationMinutes) && (
-                    <span className="text-xs text-muted-foreground">
+                    <Badge variant="outline" className="text-xs">
                       {todaySession.durationMin || todaySession.durationMinutes} Min
-                    </span>
+                    </Badge>
                   )}
                 </div>
-                {todaySession.focus && (
-                  <p className="mt-2 text-sm text-foreground">{todaySession.focus}</p>
-                )}
-                {/* First 3 exercises */}
-                <ul className="mt-3 space-y-1">
+                <div className="flex flex-wrap gap-1 mt-3">
                   {(todaySession.exercises || todaySession.mainBlock || []).slice(0, 3).map((ex, i) => (
-                    <li key={i} className="text-xs text-muted-foreground">• {ex.name || "Übung"}</li>
+                    <Badge key={i} variant="secondary" className="text-xs font-normal">
+                      {ex.name || "Übung"}
+                    </Badge>
                   ))}
-                </ul>
+                </div>
                 <Button
                   onClick={() => navigate("/calendar")}
                   className="mt-4 w-full uppercase tracking-wider"
