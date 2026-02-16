@@ -20,6 +20,7 @@ export type Database = {
           id: string
           onboarding_data: Json | null
           plan_data: Json | null
+          session_overrides: Json | null
           status: string
           updated_at: string | null
           user_id: string
@@ -29,6 +30,7 @@ export type Database = {
           id?: string
           onboarding_data?: Json | null
           plan_data?: Json | null
+          session_overrides?: Json | null
           status?: string
           updated_at?: string | null
           user_id: string
@@ -38,6 +40,7 @@ export type Database = {
           id?: string
           onboarding_data?: Json | null
           plan_data?: Json | null
+          session_overrides?: Json | null
           status?: string
           updated_at?: string | null
           user_id?: string
