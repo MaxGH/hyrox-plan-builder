@@ -14,6 +14,8 @@ Deno.serve(async (req) => {
   // 1. Auth check
   const secret = req.headers.get("x-app-secret");
   const expected = Deno.env.get("APP_SECRET");
+  console.log("secret header:", JSON.stringify(secret));
+  console.log("expected env:", JSON.stringify(expected));
   if (!secret || secret !== expected) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
