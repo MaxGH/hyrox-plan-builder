@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Zap, ChevronLeft, ChevronRight, GripVertical, Undo2, Check, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
+import TopNav from "@/components/TopNav";
 import { toast } from "@/hooks/use-toast";
 import SessionLogCard, { type SessionLog } from "@/components/SessionLogCard";
 import {
@@ -103,11 +104,11 @@ function getSessionTitle(session: Session): string {
 }
 
 const ZONE_COLORS: Record<string, string> = {
-  zone1: "bg-muted text-muted-foreground",
-  zone2: "bg-blue-900/40 text-blue-300",
-  zone3: "bg-yellow-900/40 text-yellow-300",
-  zone4: "bg-orange-900/40 text-orange-300",
-  zone5: "bg-red-900/40 text-red-300",
+  zone1: "bg-secondary text-muted-foreground",
+  zone2: "bg-blue-100 text-blue-800",
+  zone3: "bg-yellow-100 text-yellow-800",
+  zone4: "bg-orange-100 text-orange-800",
+  zone5: "bg-red-100 text-red-800",
   racePace: "bg-primary text-primary-foreground",
 };
 
@@ -309,11 +310,11 @@ function DroppableDayCell({
       </span>
       {!isActive && allDone && (
         <span className="absolute bottom-1">
-          <Check className="h-3 w-3 text-emerald-400" />
+          <Check className="h-3 w-3 text-primary" />
         </span>
       )}
       {!isActive && someDone && (
-        <span className="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-emerald-400 ring-1 ring-emerald-400/30" />
+        <span className="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-primary ring-1 ring-primary/30" />
       )}
       {!isActive && sessionCount > 0 && completedCount === 0 && (
         <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary" />
@@ -331,7 +332,7 @@ function DroppableDayCell({
 
 function DragOverlayCard({ session }: { session: Session }) {
   return (
-    <Card className="border-primary bg-card/90 shadow-xl shadow-primary/20 w-[280px]">
+    <Card className="border-primary/20 bg-card shadow-lg w-[280px]">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4 text-primary" />
@@ -637,14 +638,10 @@ export default function Calendar() {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="min-h-screen bg-background pb-20">
-        <header className="px-4 pt-6 pb-2 sm:px-8">
-          <p className="text-sm font-black uppercase tracking-widest text-foreground">
-            HYROX<span className="text-primary text-glow"> COACH</span>
-          </p>
-        </header>
+      <div className="min-h-screen bg-background pb-20 md:pb-0">
+        <TopNav />
 
-        <main className="mx-auto max-w-lg px-4 sm:px-8">
+        <main className="mx-auto max-w-2xl px-4 py-6 sm:px-8">
           {/* Week nav */}
           <div className="flex items-center justify-between py-4">
             <Button variant="ghost" size="icon" disabled={!canGoPrev} onClick={() => setViewWeek((v) => v - 1)}>
@@ -691,7 +688,7 @@ export default function Calendar() {
           )}
 
           {/* Day strip */}
-          <div className="flex justify-between gap-1 rounded-xl bg-card p-2">
+          <div className="flex justify-between gap-1 rounded-xl bg-card card-shadow p-2 mt-4">
             {weekDates.map((date, i) => {
               const dateStr = toDateStr(date);
               const dow = date.getDay();
@@ -721,9 +718,11 @@ export default function Calendar() {
             {selectedSessions.length > 0 ? (
               <>
                 {weekData?.coachNote && (
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-                    <p className="text-sm italic text-foreground/80">💬 {weekData.coachNote}</p>
-                  </div>
+                  <Card className="card-shadow border-l-4 border-l-primary">
+                    <CardContent className="py-3">
+                      <p className="text-sm italic text-foreground/80">💬 {weekData.coachNote}</p>
+                    </CardContent>
+                  </Card>
                 )}
                 {selectedSessions.map((entry) => (
                   <div key={entry.session.sessionId} className="space-y-2">
@@ -745,9 +744,9 @@ export default function Calendar() {
                 ))}
               </>
             ) : (
-              <Card className="border-border bg-card">
+              <Card className="card-shadow">
                 <CardContent className="py-12 text-center">
-                  <p className="text-2xl font-black uppercase text-foreground">RUHETAG</p>
+                  <p className="text-2xl font-extrabold uppercase text-foreground">RUHETAG</p>
                   <p className="mt-2 text-sm text-muted-foreground">
                     Erholung ist genauso wichtig wie das Training selbst. Nutze den Tag zur Regeneration.
                   </p>

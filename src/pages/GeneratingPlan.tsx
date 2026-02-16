@@ -29,7 +29,6 @@ export default function GeneratingPlan() {
     if (data) navigate("/plan");
   }, [user, navigate]);
 
-  // Initial check + realtime + polling fallback
   useEffect(() => {
     if (!user) return;
 
@@ -59,7 +58,6 @@ export default function GeneratingPlan() {
     };
   }, [user, navigate, checkPlanReady]);
 
-  // Rotate messages every 8s
   useEffect(() => {
     const timer = setInterval(
       () => setMessageIndex((i) => (i + 1) % MESSAGES.length),
@@ -69,7 +67,7 @@ export default function GeneratingPlan() {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
+    <div className="theme-dark flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
       <div className="mb-8 animate-pulse">
         <Zap className="h-20 w-20 text-primary drop-shadow-[0_0_24px_hsl(var(--primary)/0.6)]" />
       </div>

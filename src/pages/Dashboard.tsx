@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Zap, Flag, CalendarDays, Target, Calendar as CalendarIcon } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import TopNav from "@/components/TopNav";
 import SessionLogCard, { type SessionLog } from "@/components/SessionLogCard";
 import { getSessionDate } from "@/lib/sessionDate";
 
@@ -147,7 +148,6 @@ export default function Dashboard() {
     );
   }, [todaySession, startDate, currentWeek, overrides]);
 
-  // Load today's session log
   useEffect(() => {
     if (!user || !planId || !todaySession?.sessionId || !todaySessionDate) return;
     supabase
@@ -166,7 +166,7 @@ export default function Dashboard() {
   if (loading || authLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-        <Zap className="h-16 w-16 animate-pulse text-primary drop-shadow-[0_0_24px_hsl(var(--primary)/0.6)]" />
+        <Zap className="h-16 w-16 animate-pulse text-primary" />
       </div>
     );
   }
@@ -177,24 +177,20 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="px-4 pt-6 pb-2 sm:px-8">
-        <p className="text-sm font-black uppercase tracking-widest text-foreground">
-          HYROX<span className="text-primary text-glow"> COACH</span>
-        </p>
-      </header>
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
+      <TopNav />
 
-      <main className="mx-auto max-w-lg space-y-4 px-4 pb-8 sm:px-8">
+      <main className="mx-auto max-w-2xl space-y-4 px-4 py-6 sm:px-8">
         {/* Plan Summary Banner */}
-        <Card className="border-l-2 border-l-primary border-border bg-card/80 overflow-hidden">
-          <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5">
+        <Card className="card-shadow border-l-4 border-l-primary overflow-hidden">
+          <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-6 py-6">
             {/* Zielzeit */}
             <div className="flex flex-col gap-1">
               <Target className="h-4 w-4 text-primary" />
-              <p className="text-xl font-black text-foreground">
+              <p className="text-2xl font-extrabold text-foreground">
                 {p?.goalTime || "—"}
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 Zielzeit
               </p>
             </div>
@@ -204,15 +200,15 @@ export default function Dashboard() {
               <Flag className="h-4 w-4 text-primary" />
               {daysUntilRace !== null && daysUntilRace > 0 ? (
                 <>
-                  <p className="text-xl font-black text-foreground">{daysUntilRace}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground truncate">
+                  <p className="text-2xl font-extrabold text-foreground">{daysUntilRace}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">
                     Tage bis {p?.raceName || "Race Day"}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-xl font-black text-primary">🏁</p>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <p className="text-2xl font-extrabold text-primary">🏁</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     Geschafft
                   </p>
                 </>
@@ -222,10 +218,10 @@ export default function Dashboard() {
             {/* Aktuelle Phase */}
             <div className="flex flex-col gap-1">
               <Zap className="h-4 w-4 text-primary" />
-              <p className="text-xl font-black text-foreground truncate">
+              <p className="text-2xl font-extrabold text-foreground truncate">
                 {currentBlock?.blockName || "—"}
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground truncate" title={currentBlock?.blockGoal}>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate" title={currentBlock?.blockGoal}>
                 {currentBlock?.blockGoal
                   ? currentBlock.blockGoal.length > 60
                     ? currentBlock.blockGoal.substring(0, 60) + "…"
@@ -237,10 +233,10 @@ export default function Dashboard() {
             {/* Sessions diese Woche */}
             <div className="flex flex-col gap-1">
               <CalendarIcon className="h-4 w-4 text-primary" />
-              <p className="text-xl font-black text-foreground">
+              <p className="text-2xl font-extrabold text-foreground">
                 {weekSessionCount}
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 Einheiten / Woche
               </p>
             </div>
@@ -248,28 +244,28 @@ export default function Dashboard() {
         </Card>
 
         {/* Progress Timeline */}
-        <Card className="border-border bg-card">
+        <Card className="card-shadow">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+            <CardTitle className="text-sm font-bold uppercase tracking-[0.08em] text-muted-foreground">
               Fortschritt
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="relative">
-              {/* Block segments */}
-              <div className="flex h-6 w-full overflow-hidden rounded-full">
+              <div className="flex h-6 w-full overflow-hidden rounded-full bg-secondary">
                 {blocks.map((block, bi) => {
                   const ws = block.weekStart || 1;
                   const we = block.weekEnd || ws;
                   const span = we - ws + 1;
                   const pct = (span / totalWeeks) * 100;
-                  const shades = [
-                    "bg-secondary", "bg-muted", "bg-primary/20", "bg-primary/30", "bg-primary/40",
-                  ];
+                  const isCompleted = currentWeek > (we || 0);
+                  const isCurrent = currentWeek >= (ws || 0) && currentWeek <= (we || 0);
                   return (
                     <div
                       key={bi}
-                      className={`relative flex items-center justify-center ${shades[bi % shades.length]}`}
+                      className={`relative flex items-center justify-center ${
+                        isCompleted ? "bg-primary/30" : isCurrent ? "bg-primary/15" : "bg-secondary"
+                      }`}
                       style={{ width: `${pct}%` }}
                     >
                       <span className="truncate px-1 text-[10px] font-bold uppercase text-muted-foreground">
@@ -279,16 +275,13 @@ export default function Dashboard() {
                   );
                 })}
               </div>
-              {/* Current week marker */}
               <div
-                className="absolute top-0 h-6 w-0.5 bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.8)]"
+                className="absolute top-0 h-6 w-0.5 bg-primary"
                 style={{ left: `${Math.min(((currentWeek - 0.5) / totalWeeks) * 100, 100)}%` }}
               />
-              {/* Race flag */}
               <div className="absolute -top-1 right-0">
                 <Flag className="h-4 w-4 text-primary" />
               </div>
-              {/* Labels */}
               <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
                 <span>W1</span>
                 <span>W{totalWeeks}</span>
@@ -298,16 +291,16 @@ export default function Dashboard() {
         </Card>
 
         {/* Today's Session */}
-        <Card className="border-border bg-card">
+        <Card className="card-shadow border-l-4 border-l-primary">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+            <CardTitle className="text-sm font-bold uppercase tracking-[0.08em] text-muted-foreground">
               Heutiges Training
             </CardTitle>
           </CardHeader>
           <CardContent>
             {todaySession ? (
               <div>
-                <p className="text-lg font-black text-foreground">
+                <p className="text-lg font-extrabold text-foreground">
                   {getSessionTitle(todaySession)}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
@@ -342,7 +335,7 @@ export default function Dashboard() {
                 )}
                 <Button
                   onClick={() => navigate("/calendar")}
-                  className="mt-4 w-full uppercase tracking-wider"
+                  className="mt-4 w-full font-semibold uppercase tracking-wider bg-foreground text-background hover:bg-foreground/90 rounded-full"
                   size="sm"
                 >
                   <CalendarDays className="mr-2 h-4 w-4" />
@@ -351,7 +344,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="text-center py-4">
-                <p className="text-xl font-black uppercase text-foreground">RUHETAG</p>
+                <p className="text-xl font-extrabold uppercase text-foreground">RUHETAG</p>
                 <p className="mt-1 text-sm text-muted-foreground">Erholung ist Training.</p>
               </div>
             )}
