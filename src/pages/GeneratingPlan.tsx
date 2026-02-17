@@ -5,12 +5,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Zap } from "lucide-react";
 
 const MESSAGES = [
-  "Dein KI Coach analysiert deine Trainingsdaten…",
-  "Laufpace, Stationssplits und Erholung werden berechnet…",
-  "Ein professioneller Trainingsplan braucht Zeit. Wir bauen ihn gerade für dich.",
-  "Deine Schwächen werden gezielt adressiert…",
-  "Trainingsblöcke, Deload-Wochen und Peaking werden strukturiert…",
-  "Fast fertig — dein Plan nimmt Form an.",
+  "Dein Plan wird gerade von unserer KI erstellt…",
+  "Das dauert einen Moment — Qualität braucht Zeit.",
+  "Laufpace, Splits und Erholung werden analysiert…",
+  "Deine Schwächen werden gezielt in den Plan eingebaut…",
+  "Trainingsblöcke und Periodisierung werden strukturiert…",
+  "Gleich geschafft — dein Plan nimmt Form an.",
 ];
 
 export default function GeneratingPlan() {
@@ -67,22 +67,17 @@ export default function GeneratingPlan() {
   }, []);
 
   return (
-    <div className="theme-dark flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
-      <div className="mb-8 animate-pulse">
-        <Zap className="h-20 w-20 text-primary drop-shadow-[0_0_24px_hsl(var(--primary)/0.6)]" />
+    <div className="theme-dark flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
+      <div className="mb-10">
+        <Zap className="h-14 w-14 text-primary animate-pulse drop-shadow-[0_0_20px_hsl(var(--primary)/0.5)]" />
       </div>
 
-      <p className="mx-auto max-w-lg text-2xl font-bold tracking-wide text-foreground transition-opacity duration-700">
+      <p className="mx-auto max-w-md text-lg font-medium tracking-tight text-foreground/90 transition-opacity duration-700">
         {MESSAGES[messageIndex]}
       </p>
 
-      <p className="mx-auto mt-6 max-w-md text-sm text-muted-foreground">
-        Unsere KI erstellt deinen Plan mit professioneller Präzision. Das kann
-        1–3 Minuten dauern.
-      </p>
-
-      <div className="mt-10 h-1.5 w-64 overflow-hidden rounded-full bg-muted">
-        <div className="h-full w-1/3 animate-indeterminate rounded-full bg-primary" />
+      <div className="mt-12 h-1 w-48 overflow-hidden rounded-full bg-muted">
+        <div className="h-full w-1/3 animate-indeterminate rounded-full bg-primary/80" />
       </div>
     </div>
   );
