@@ -6,13 +6,12 @@ interface ProgressBarProps {
 }
 
 const STEP_LABELS = [
-  "Personal Info",
-  "Experience",
-  "Training Setup",
-  "Running Fitness",
-  "Lifestyle",
-  "Race Goal",
-  "Race History",
+  "Event",
+  "Profil",
+  "Leistung",
+  "Training",
+  "Equipment",
+  "Recovery",
 ];
 
 export default function ProgressBar({ currentStep, totalSteps }: ProgressBarProps) {
@@ -22,7 +21,7 @@ export default function ProgressBar({ currentStep, totalSteps }: ProgressBarProp
     <div className="w-full space-y-2">
       <div className="flex items-center justify-between text-sm">
         <span className="font-semibold uppercase tracking-wider text-foreground">
-          Step {currentStep + 1} of {totalSteps}
+          Schritt {currentStep + 1} von {totalSteps}
         </span>
         <span className="text-muted-foreground">{STEP_LABELS[currentStep]}</span>
       </div>
