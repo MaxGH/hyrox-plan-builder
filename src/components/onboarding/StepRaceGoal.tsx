@@ -23,13 +23,13 @@ export default function StepRaceGoal({ data, updateData, errors }: StepProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    supabase
-      .from("hyrox_events")
+    (supabase
+      .from("hyrox_events" as any)
       .select("*")
-      .order("name", { ascending: true })
-      .then(({ data: rows, error }) => {
+      .order("name", { ascending: true }) as any)
+      .then(({ data: rows, error }: { data: HyroxEvent[] | null; error: any }) => {
         if (!error && rows && rows.length > 0) {
-          setEvents(rows as HyroxEvent[]);
+          setEvents(rows);
         } else {
           setMode("manual");
         }
