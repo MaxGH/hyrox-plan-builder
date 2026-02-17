@@ -1,63 +1,87 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, LogOut } from "lucide-react";
+import { ArrowLeft, ArrowRight, LogOut, Pause } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ProgressBar from "@/components/onboarding/ProgressBar";
-import StepPersonalInfo from "@/components/onboarding/StepPersonalInfo";
-import StepExperience from "@/components/onboarding/StepExperience";
-import StepTrainingSetup from "@/components/onboarding/StepTrainingSetup";
-import StepRunningFitness from "@/components/onboarding/StepRunningFitness";
-import StepLifestyle from "@/components/onboarding/StepLifestyle";
-import StepRaceGoal from "@/components/onboarding/StepRaceGoal";
-import StepRaceHistory from "@/components/onboarding/StepRaceHistory";
+import StepEvent from "@/components/onboarding/StepEvent";
+import StepProfile from "@/components/onboarding/StepProfile";
+import StepPerformance from "@/components/onboarding/StepPerformance";
+import StepTraining from "@/components/onboarding/StepTraining";
+import StepEquipment from "@/components/onboarding/StepEquipment";
+import StepRecovery from "@/components/onboarding/StepRecovery";
+import {
+  type OnboardingData,
+  initialOnboardingData,
+  buildPayload,
+  isValidDate,
+  TIME_REGEX,
+} from "@/components/onboarding/types";
 
-import { type OnboardingData, initialOnboardingData } from "@/components/onboarding/types";
-
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
 type ValidationRule = {
-  field: keyof OnboardingData;
+  key: string;
   message: string;
-  validate: (data: OnboardingData) => boolean;
+  validate: (d: OnboardingData) => boolean;
 };
 
 const STEP_VALIDATIONS: Record<number, ValidationRule[]> = {
   0: [
-    { field: "name", message: "Name is required", validate: (d) => d.name.trim().length > 0 },
-    { field: "weight", message: "Weight is required", validate: (d) => d.weight !== "" && Number(d.weight) > 0 },
-    { field: "height", message: "Height is required", validate: (d) => d.height !== "" && Number(d.height) > 0 },
+    { key: "event.raceDate", message: "Renndatum ist erforderlich", validate: (d) => isValidDate(d.event.raceDate) },
+    { key: "event.startDate", message: "Startdatum ist erforderlich", validate: (d) => isValidDate(d.event.startDate) },
+    {
+      key: "event.startDate",
+      message: "Startdatum muss vor dem Renndatum liegen",
+      validate: (d) => !isValidDate(d.event.startDate) || !isValidDate(d.event.raceDate) || d.event.startDate < d.event.raceDate,
+    },
+    {
+      key: "event.goalTime",
+      message: "Ungültiges Zeitformat (HH:MM:SS)",
+      validate: (d) => !d.event.goalTime.trim() || TIME_REGEX.test(d.event.goalTime.trim()),
+    },
   ],
   1: [
-    { field: "level", message: "Select a level", validate: (d) => d.level.length > 0 },
-    { field: "experienceYears", message: "Experience is required", validate: (d) => d.experienceYears !== "" },
+    { key: "profile.sex", message: "Geschlecht auswählen", validate: (d) => d.profile.sex !== "" },
+    { key: "profile.raceCategory", message: "Kategorie auswählen", validate: (d) => d.profile.raceCategory !== "" },
+    { key: "profile.level", message: "Level auswählen", validate: (d) => d.profile.level !== "" },
+    { key: "profile.hasRaceExperience", message: "Bitte auswählen", validate: (d) => d.profile.hasRaceExperience !== null },
   ],
   2: [
-    { field: "trainingEnvironment", message: "Select at least one environment", validate: (d) => d.trainingEnvironment.length > 0 },
-    { field: "availableEquipment", message: "Select at least one option", validate: (d) => d.availableEquipment.length > 0 },
-  ],
-  3: [
-    { field: "fiveKmTime", message: "5K time is required", validate: (d) => d.fiveKmTime.trim().length > 0 },
-    { field: "runFrequency", message: "Run frequency is required", validate: (d) => d.runFrequency.length > 0 },
-    { field: "longestRecentRun", message: "Longest run is required", validate: (d) => d.longestRecentRun !== "" },
-    { field: "strengths", message: "Select at least one strength", validate: (d) => d.strengths.length > 0 },
-    { field: "weaknesses", message: "Select at least one weakness", validate: (d) => d.weaknesses.length > 0 },
-  ],
-  4: [], // all optional or have defaults
-  5: [
-    { field: "raceName", message: "Race name is required", validate: (d) => d.raceName.trim().length > 0 },
-    { field: "raceDate", message: "Race date is required", validate: (d) => d.raceDate !== undefined },
-    { field: "startDate", message: "Start date is required", validate: (d) => d.startDate !== undefined },
-    { field: "goalTime", message: "Goal time is required", validate: (d) => d.goalTime.trim().length > 0 },
-  ],
-  6: [
-    { field: "hasRaceExperience", message: "Please select an option", validate: (d) => d.hasRaceExperience !== null },
     {
-      field: "previousRaceTime",
-      message: "Previous race time is required",
-      validate: (d) => d.hasRaceExperience !== true || d.previousRaceTime.trim().length > 0,
+      key: "performance.atLeastOne",
+      message: "Bitte mindestens eine Laufzeit angeben (z. B. 5k).",
+      validate: (d) =>
+        d.performance.fiveKmTime.trim().length > 0 ||
+        d.performance.threeKmTime.trim().length > 0 ||
+        d.performance.tenKmTime.trim().length > 0,
+    },
+    {
+      key: "performance.fiveKmTime",
+      message: "Ungültiges Zeitformat",
+      validate: (d) => !d.performance.fiveKmTime.trim() || TIME_REGEX.test(d.performance.fiveKmTime.trim()),
+    },
+    {
+      key: "performance.threeKmTime",
+      message: "Ungültiges Zeitformat",
+      validate: (d) => !d.performance.threeKmTime.trim() || TIME_REGEX.test(d.performance.threeKmTime.trim()),
+    },
+    {
+      key: "performance.tenKmTime",
+      message: "Ungültiges Zeitformat",
+      validate: (d) => !d.performance.tenKmTime.trim() || TIME_REGEX.test(d.performance.tenKmTime.trim()),
+    },
+  ],
+  3: [], // all have defaults
+  4: [], // equipment toggles always valid, weaknesses optional
+  5: [
+    {
+      key: "previousRace.previousRaceTime",
+      message: "Ungültiges Zeitformat (HH:MM:SS)",
+      validate: (d) =>
+        !d.previousRace.previousRaceTime.trim() || TIME_REGEX.test(d.previousRace.previousRaceTime.trim()),
     },
   ],
 };
@@ -70,16 +94,42 @@ export default function Onboarding() {
   const [data, setData] = useState<OnboardingData>(initialOnboardingData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  // Warn on leave
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
 
   const updateData = useCallback((updates: Partial<OnboardingData>) => {
-    setData((prev) => ({ ...prev, ...updates }));
-    // Clear errors for updated fields
+    setDirty(true);
+    setData((prev) => {
+      const next = { ...prev };
+      for (const [key, value] of Object.entries(updates)) {
+        (next as any)[key] = typeof value === "object" && !Array.isArray(value) && value !== null
+          ? { ...(prev as any)[key], ...value }
+          : value;
+      }
+      return next;
+    });
+    // Clear related errors
     const clearedErrors: Record<string, string> = {};
     for (const key of Object.keys(updates)) {
-      clearedErrors[key] = "";
+      // clear all errors starting with this key
+      for (const eKey of Object.keys(errors)) {
+        if (eKey.startsWith(key)) clearedErrors[eKey] = "";
+      }
     }
-    setErrors((prev) => ({ ...prev, ...clearedErrors }));
-  }, []);
+    if (Object.keys(clearedErrors).length > 0) {
+      setErrors((prev) => ({ ...prev, ...clearedErrors }));
+    }
+  }, [errors]);
 
   const validateStep = (): boolean => {
     const rules = STEP_VALIDATIONS[step] || [];
@@ -87,7 +137,7 @@ export default function Onboarding() {
     let valid = true;
     for (const rule of rules) {
       if (!rule.validate(data)) {
-        newErrors[rule.field as string] = rule.message;
+        newErrors[rule.key] = rule.message;
         valid = false;
       }
     }
@@ -112,6 +162,8 @@ export default function Onboarding() {
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) throw new Error("Nicht eingeloggt");
 
+      const payload = buildPayload(data);
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-plan`,
         {
@@ -120,7 +172,7 @@ export default function Onboarding() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({ onboarding: { ...data, user_id: user.id } }),
+          body: JSON.stringify({ onboarding: payload }),
         }
       );
 
@@ -131,10 +183,15 @@ export default function Onboarding() {
         return;
       }
 
-      if (!response.ok) {
-        throw new Error("Plan-Generierung fehlgeschlagen");
-      }
+      if (!response.ok) throw new Error("Plan-Generierung fehlgeschlagen");
 
+      // Set onboarding complete
+      await supabase
+        .from("profiles" as any)
+        .update({ onboarding_complete: true } as any)
+        .eq("user_id", user.id);
+
+      setDirty(false);
       navigate("/generating");
     } catch (err: any) {
       setSubmitting(false);
@@ -149,28 +206,38 @@ export default function Onboarding() {
   const stepProps = { data, updateData, errors };
 
   const STEPS = [
-    <StepPersonalInfo key={0} {...stepProps} />,
-    <StepExperience key={1} {...stepProps} />,
-    <StepTrainingSetup key={2} {...stepProps} />,
-    <StepRunningFitness key={3} {...stepProps} />,
-    <StepLifestyle key={4} {...stepProps} />,
-    <StepRaceGoal key={5} {...stepProps} />,
-    <StepRaceHistory key={6} {...stepProps} />,
+    <StepEvent key={0} {...stepProps} />,
+    <StepProfile key={1} {...stepProps} />,
+    <StepPerformance key={2} {...stepProps} />,
+    <StepTraining key={3} {...stepProps} />,
+    <StepEquipment key={4} {...stepProps} />,
+    <StepRecovery key={5} {...stepProps} />,
   ];
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Header */}
       <header className="flex items-center justify-between border-b border-border px-4 py-3">
         <h1 className="text-lg font-black uppercase tracking-widest text-foreground">
           HYROX<span className="text-primary text-glow"> COACH</span>
         </h1>
-        <Button onClick={signOut} variant="ghost" size="sm" className="text-muted-foreground">
-          <LogOut className="mr-1 h-4 w-4" /> Log out
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => {
+              if (dirty && !confirm("Fortschritt geht verloren. Trotzdem abbrechen?")) return;
+              navigate("/");
+            }}
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+          >
+            <Pause className="mr-1 h-4 w-4" /> Später
+          </Button>
+          <Button onClick={signOut} variant="ghost" size="sm" className="text-muted-foreground">
+            <LogOut className="mr-1 h-4 w-4" />
+          </Button>
+        </div>
       </header>
 
-      {/* Content */}
       <main className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 py-6">
         <ProgressBar currentStep={step} totalSteps={TOTAL_STEPS} />
 
@@ -178,20 +245,23 @@ export default function Onboarding() {
           {STEPS[step]}
         </div>
 
-        {/* Navigation */}
         <div className="mt-8 flex gap-3">
           {step > 0 && (
             <Button onClick={back} variant="outline" className="flex-1 uppercase tracking-wider">
-              <ArrowLeft className="mr-1 h-4 w-4" /> Back
+              <ArrowLeft className="mr-1 h-4 w-4" /> Zurück
             </Button>
           )}
           {step < TOTAL_STEPS - 1 ? (
             <Button onClick={next} className="flex-1 uppercase tracking-wider font-bold">
-              Next <ArrowRight className="ml-1 h-4 w-4" />
+              Weiter <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={submit} disabled={submitting} className="flex-1 uppercase tracking-wider font-bold text-lg py-6">
-              {submitting ? "Wird erstellt…" : "Create My Plan"}
+            <Button
+              onClick={submit}
+              disabled={submitting}
+              className="flex-1 uppercase tracking-wider font-bold text-lg py-6"
+            >
+              {submitting ? "Wird erstellt…" : "Plan anfordern"}
             </Button>
           )}
         </div>
