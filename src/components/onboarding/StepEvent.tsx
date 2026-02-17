@@ -1,16 +1,31 @@
+import { useEffect, useState } from "react";
 import { StepProps, isValidDate } from "./types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+
+interface EventOption {
+  id: string;
+  name: string;
+}
 
 export default function StepEvent({ data, updateData, errors }: StepProps) {
   const { event } = data;
+  const [events, setEvents] = useState<EventOption[]>([]);
+
+  useEffect(() => {
+    supabase.from("events").select("id, name").order("name").then(({ data }) => {
+      if (data) setEvents(data);
+    });
+  }, []);
 
   const raceDateObj = isValidDate(event.raceDate) ? parseISO(event.raceDate) : undefined;
   const startDateObj = isValidDate(event.startDate) ? parseISO(event.startDate) : undefined;
@@ -25,6 +40,13 @@ export default function StepEvent({ data, updateData, errors }: StepProps) {
     });
   };
 
+  const handleEventSelect = (eventId: string) => {
+    const selected = events.find((e) => e.id === eventId);
+    updateData({
+      event: { ...event, eventId, raceName: selected?.name || "" },
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -32,6 +54,28 @@ export default function StepEvent({ data, updateData, errors }: StepProps) {
         <p className="mt-1 text-sm text-muted-foreground">
           Wann und wo findet dein Rennen statt?
         </p>
+      </div>
+
+      {/* Event Select */}
+      <div className="space-y-2">
+        <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Event *
+        </Label>
+        <Select value={event.eventId} onValueChange={handleEventSelect}>
+          <SelectTrigger className="w-full border-border bg-secondary rounded-xl">
+            <SelectValue placeholder="Event wählen" />
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            {events.map((ev) => (
+              <SelectItem key={ev.id} value={ev.id}>
+                {ev.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors["event.eventId"] && (
+          <p className="text-xs text-destructive">{errors["event.eventId"]}</p>
+        )}
       </div>
 
       {/* Race Date */}
@@ -104,19 +148,6 @@ export default function StepEvent({ data, updateData, errors }: StepProps) {
             ⚠ Planlänge min. 6 Wochen empfohlen (aktuell {daysDiff} Tage).
           </p>
         )}
-      </div>
-
-      {/* Race Name */}
-      <div className="space-y-2">
-        <Label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Rennname (optional)
-        </Label>
-        <Input
-          value={event.raceName}
-          onChange={(e) => updateData({ event: { ...event, raceName: e.target.value } })}
-          placeholder="HYROX Race"
-          className="border-border bg-secondary rounded-xl"
-        />
       </div>
 
       {/* Goal Time */}
