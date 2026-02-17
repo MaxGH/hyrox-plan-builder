@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, RotateCcw } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,6 @@ import type { StepProps } from "./types";
 interface HyroxEvent {
   id: string;
   name: string;
-  race_date: string;
 }
 
 export default function StepRaceGoal({ data, updateData, errors }: StepProps) {
@@ -27,8 +26,7 @@ export default function StepRaceGoal({ data, updateData, errors }: StepProps) {
     supabase
       .from("hyrox_events")
       .select("*")
-      .gte("race_date", new Date().toISOString().split("T")[0])
-      .order("race_date", { ascending: true })
+      .order("name", { ascending: true })
       .then(({ data: rows, error }) => {
         if (!error && rows && rows.length > 0) {
           setEvents(rows as HyroxEvent[]);
@@ -39,21 +37,13 @@ export default function StepRaceGoal({ data, updateData, errors }: StepProps) {
       });
   }, []);
 
-  const formatDateDE = (dateStr: string) => {
-    const d = new Date(dateStr + "T00:00:00");
-    return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
-  };
-
   const selectedLabel = useMemo(() => {
-    if (!data.raceName || !data.raceDate) return null;
-    return `${data.raceName} — ${format(data.raceDate, "dd.MM.yyyy")}`;
-  }, [data.raceName, data.raceDate]);
+    if (!data.raceName) return null;
+    return data.raceName;
+  }, [data.raceName]);
 
   const selectEvent = (ev: HyroxEvent) => {
-    updateData({
-      raceName: ev.name,
-      raceDate: new Date(ev.race_date + "T00:00:00"),
-    });
+    updateData({ raceName: ev.name });
     setOpen(false);
   };
 
@@ -85,10 +75,10 @@ export default function StepRaceGoal({ data, updateData, errors }: StepProps) {
                     {events.map((ev) => (
                       <CommandItem
                         key={ev.id}
-                        value={`${ev.name} ${ev.race_date}`}
+                        value={ev.name}
                         onSelect={() => selectEvent(ev)}
                       >
-                        {ev.name} — {formatDateDE(ev.race_date)}
+                        {ev.name}
                       </CommandItem>
                     ))}
                   </CommandGroup>
@@ -161,43 +151,35 @@ export default function StepRaceGoal({ data, updateData, errors }: StepProps) {
         </>
       )}
 
-      {/* Race name/date stay editable after auto-fill in dropdown mode */}
-      {mode === "dropdown" && selectedLabel && (
-        <div className="space-y-4 pt-2 border-t">
-          <div className="space-y-2">
-            <Label htmlFor="raceName">Race Name (bearbeitbar)</Label>
-            <Input
-              id="raceName"
-              value={data.raceName}
-              onChange={(e) => updateData({ raceName: e.target.value })}
+      {/* Race date — always shown as manual picker */}
+      <div className="space-y-2">
+        <Label>Race Date</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !data.raceDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {data.raceDate ? format(data.raceDate, "PPP") : "Pick a date"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={data.raceDate}
+              onSelect={(d) => updateData({ raceDate: d })}
+              disabled={(date) => date < new Date()}
+              initialFocus
+              className="p-3 pointer-events-auto"
             />
-          </div>
-          <div className="space-y-2">
-            <Label>Race Date (bearbeitbar)</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn("w-full justify-start text-left font-normal")}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {data.raceDate ? format(data.raceDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={data.raceDate}
-                  onSelect={(d) => updateData({ raceDate: d })}
-                  disabled={(date) => date < new Date()}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-      )}
+          </PopoverContent>
+        </Popover>
+        {errors.raceDate && <p className="text-sm text-destructive">{errors.raceDate}</p>}
+      </div>
 
       {/* Start date — unchanged */}
       <div className="space-y-2">

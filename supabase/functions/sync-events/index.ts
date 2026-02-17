@@ -38,11 +38,10 @@ Deno.serve(async (req) => {
     const { data, error } = await supabase
       .from("hyrox_events")
       .upsert(
-        events.map((e: { name: string; race_date: string }) => ({
+        events.map((e: { name: string }) => ({
           name: e.name,
-          race_date: e.race_date,
         })),
-        { onConflict: "name,race_date" }
+        { onConflict: "name" }
       )
       .select();
 

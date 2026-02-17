@@ -19,19 +19,16 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
-          race_date: string
         }
         Insert: {
           created_at?: string | null
           id?: string
           name: string
-          race_date: string
         }
         Update: {
           created_at?: string | null
           id?: string
           name?: string
-          race_date?: string
         }
         Relationships: []
       }
