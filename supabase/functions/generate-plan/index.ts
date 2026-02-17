@@ -93,6 +93,9 @@ Deno.serve(async (req) => {
       "https://n8n.srv1371680.hstgr.cloud/webhook/38e417df-407a-4917-9627-4237643284a1";
     const webhookSecret = Deno.env.get("N8N_WEBHOOK_SECRET");
 
+    console.log("Calling n8n webhook:", webhookUrl);
+    console.log("Webhook secret present:", !!webhookSecret, "value length:", webhookSecret?.length);
+    
     fetch(webhookUrl, {
       method: "POST",
       headers: {
@@ -100,7 +103,9 @@ Deno.serve(async (req) => {
         ...(webhookSecret ? { "x-app-secret": webhookSecret } : {}),
       },
       body: JSON.stringify({ onboarding: { ...body.onboarding, user_id: userId } }),
-    }).catch(() => {});
+    })
+      .then((res) => console.log("n8n webhook response:", res.status, res.statusText))
+      .catch((err) => console.error("n8n webhook error:", err.message));
 
     // 5. Return success
     return new Response(
