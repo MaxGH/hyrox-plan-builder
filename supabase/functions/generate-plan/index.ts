@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
 
     // 4. Forward to n8n (fire and forget)
     const webhookUrl =
-      "https://n8n.srv1371680.hstgr.cloud/webhook-test/38e417df-407a-4917-9627-4237643284a1";
+      "https://n8n.srv1371680.hstgr.cloud/webhook/38e417df-407a-4917-9627-4237643284a1";
     const webhookSecret = Deno.env.get("N8N_WEBHOOK_SECRET");
 
     console.log("Calling n8n webhook:", webhookUrl);
