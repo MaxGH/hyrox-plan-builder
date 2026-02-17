@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      hyrox_events: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          race_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          race_date: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          race_date?: string
+        }
+        Relationships: []
+      }
       session_logs: {
         Row: {
           completed: boolean | null
