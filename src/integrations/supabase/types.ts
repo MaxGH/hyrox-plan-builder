@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_types: {
+        Row: {
+          category: string
+          created_at: string | null
+          end_time: string
+          event_date: string
+          event_id: string
+          id: string
+          sort_order: number | null
+          start_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          end_time: string
+          event_date: string
+          event_id: string
+          id?: string
+          sort_order?: number | null
+          start_time: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          end_time?: string
+          event_date?: string
+          event_id?: string
+          id?: string
+          sort_order?: number | null
+          start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_types_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       session_logs: {
         Row: {
           completed: boolean | null
