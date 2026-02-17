@@ -30,6 +30,7 @@ type ValidationRule = {
 
 const STEP_VALIDATIONS: Record<number, ValidationRule[]> = {
   0: [
+    { key: "event.eventId", message: "Bitte ein Event auswählen", validate: (d) => d.event.eventId.length > 0 },
     { key: "event.raceDate", message: "Renndatum ist erforderlich", validate: (d) => isValidDate(d.event.raceDate) },
     { key: "event.startDate", message: "Startdatum ist erforderlich", validate: (d) => isValidDate(d.event.startDate) },
     {

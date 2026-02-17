@@ -9,6 +9,7 @@ export interface OnboardingData {
     raceDate: string; // YYYY-MM-DD
     startDate: string; // YYYY-MM-DD
     raceName: string;
+    eventId: string;
     goalTime: string; // HH:MM:SS or ""
   };
   training: {
@@ -64,7 +65,8 @@ export const initialOnboardingData: OnboardingData = {
   event: {
     raceDate: "",
     startDate: "",
-    raceName: "HYROX Race",
+    raceName: "",
+    eventId: "",
     goalTime: "",
   },
   training: {
