@@ -75,8 +75,10 @@ export default function StepRaceGoal({ data, updateData, errors }: StepProps) {
         if (!error && rows && rows.length > 0) {
           setEventTypes(rows);
         } else {
-          setEventTypes([]);
-          setStep2Manual(true);
+          // Show a single placeholder option so the dropdown still renders
+          setEventTypes([
+            { id: "__placeholder__", category: "[Kategorie noch nicht verfügbar — Datum bitte manuell eintragen]", event_date: "" },
+          ]);
         }
         setLoadingTypes(false);
       });
@@ -101,6 +103,13 @@ export default function StepRaceGoal({ data, updateData, errors }: StepProps) {
     (typeId: string) => {
       const t = eventTypes.find((et) => et.id === typeId);
       if (!t) return;
+      if (t.id === "__placeholder__") {
+        // No category or date — just keep the event name
+        updateData({ raceName: selectedEventName, raceDate: undefined });
+        setNameAutoFilled(true);
+        setDateAutoFilled(false);
+        return;
+      }
       const composedName = `${selectedEventName} ${t.category}`;
       const parsedDate = parse(t.event_date, "yyyy-MM-dd", new Date());
       updateData({ raceName: composedName, raceDate: parsedDate });
@@ -203,7 +212,7 @@ export default function StepRaceGoal({ data, updateData, errors }: StepProps) {
                 <SelectContent>
                   {eventTypes.map((et) => (
                     <SelectItem key={et.id} value={et.id}>
-                      {et.category} — {formatEventDate(et.event_date)}
+                      {et.id === "__placeholder__" ? et.category : `${et.category} — ${formatEventDate(et.event_date)}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
