@@ -1,0 +1,1 @@
+ALTER TABLE public.training_plans DROP CONSTRAINT IF EXISTS training_plans_user_id_fkey;
