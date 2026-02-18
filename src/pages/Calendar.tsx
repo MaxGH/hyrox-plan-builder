@@ -2,10 +2,9 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Zap, ChevronLeft, ChevronRight, GripVertical, Undo2, Check, RotateCcw } from "lucide-react";
+import { Zap, ChevronLeft, ChevronRight, GripVertical, Undo2, Check, RotateCcw, Clock, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
@@ -77,14 +76,12 @@ type Overrides = Record<string, string>;
 
 // --- Constants ---
 
-const DOW_SHORT = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+const DOW_SHORT = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
+const DOW_LONG = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 const DOW_GERMAN: Record<string, number> = {
   Sonntag: 0, Montag: 1, Dienstag: 2, Mittwoch: 3,
   Donnerstag: 4, Freitag: 5, Samstag: 6,
 };
-const DOW_REVERSE: Record<number, string> = Object.fromEntries(
-  Object.entries(DOW_GERMAN).map(([k, v]) => [v, k])
-);
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
   combo: "Kombi", run: "Lauf", strength: "Kraft",
@@ -103,20 +100,6 @@ function getSessionTitle(session: Session): string {
   return "Training";
 }
 
-const ZONE_COLORS: Record<string, string> = {
-  zone1: "bg-secondary text-muted-foreground",
-  zone2: "bg-blue-100 text-blue-800",
-  zone3: "bg-yellow-100 text-yellow-800",
-  zone4: "bg-orange-100 text-orange-800",
-  zone5: "bg-red-100 text-red-800",
-  racePace: "bg-primary text-primary-foreground",
-};
-
-const ZONE_LABELS: Record<string, string> = {
-  zone1: "Zone 1", zone2: "Zone 2", zone3: "Zone 3",
-  zone4: "Zone 4", zone5: "Zone 5", racePace: "Race Pace",
-};
-
 // --- Helpers ---
 
 function toDateStr(d: Date): string {
@@ -130,8 +113,7 @@ function getOriginalDate(session: Session, weekNumber: number, startDate: Date):
   const day = weekStart.getDay();
   const mondayOffset = day === 0 ? -6 : 1 - day;
   weekStart.setDate(weekStart.getDate() + mondayOffset);
-  // Find the date for this dow within the week
-  const diff = dow === 0 ? 6 : dow - 1; // Mon=0, ..., Sun=6
+  const diff = dow === 0 ? 6 : dow - 1;
   const d = new Date(weekStart);
   d.setDate(d.getDate() + diff);
   return toDateStr(d);
@@ -147,6 +129,10 @@ function getAllSessions(blocks: Block[]): { session: Session; weekNumber: number
     }
   }
   return result;
+}
+
+function formatDateLabel(d: Date): string {
+  return `${d.getDate()}.${d.getMonth() + 1}.`;
 }
 
 // --- Draggable Session Card ---
@@ -165,103 +151,73 @@ function DraggableSessionCard({
   });
 
   const exercises = session.exercises || session.mainBlock || [];
+  const duration = session.durationMin || session.durationMinutes;
 
   return (
-    <Card
+    <div
       ref={setNodeRef}
       className={cn(
-        "border-border bg-card transition-all",
-        isDragging && "opacity-40 border-primary"
+        "glass rounded-xl p-4 transition-all",
+        isDragging && "opacity-40 ring-1 ring-primary"
       )}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          <button
-            {...attributes}
-            {...listeners}
-            className="touch-none cursor-grab active:cursor-grabbing p-1 -ml-1 text-muted-foreground hover:text-foreground"
-            aria-label="Drag session"
-          >
-            <GripVertical className="h-4 w-4" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-base font-black text-foreground truncate">
-              {getSessionTitle(session)}
-            </CardTitle>
-            <div className="flex flex-wrap items-center gap-2 mt-1">
-              {session.sessionType && (
-                <Badge className="bg-primary text-primary-foreground text-xs uppercase">
-                  {SESSION_TYPE_LABELS[session.sessionType] || session.sessionType}
-                </Badge>
-              )}
-              {(session.durationMin || session.durationMinutes) && (
-                <Badge variant="outline" className="text-xs">
-                  {session.durationMin || session.durationMinutes} Min
-                </Badge>
-              )}
-              {isOverridden && (
-                <Badge variant="outline" className="text-xs border-primary/50 text-primary">
-                  verschoben
-                </Badge>
-              )}
-            </div>
+      <div className="flex items-start gap-3">
+        <button
+          {...attributes}
+          {...listeners}
+          className="touch-none cursor-grab active:cursor-grabbing p-1 -ml-1 text-muted-foreground hover:text-foreground mt-0.5"
+          aria-label="Drag session"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-extrabold text-foreground truncate">
+            {getSessionTitle(session)}
+          </h3>
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            {duration && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" /> {duration} Min
+              </span>
+            )}
+            {session.sessionType && (
+              <Badge className="bg-primary/15 text-primary border-0 text-xs">
+                {SESSION_TYPE_LABELS[session.sessionType] || session.sessionType}
+              </Badge>
+            )}
+            {isOverridden && (
+              <Badge className="bg-yellow-900/30 text-yellow-400 border-0 text-xs">
+                verschoben
+              </Badge>
+            )}
           </div>
-          {isOverridden && onUndo && (
-            <button
-              onClick={onUndo}
-              className="flex items-center gap-1 text-xs text-primary hover:underline whitespace-nowrap"
-            >
-              <Undo2 className="h-3 w-3" /> Zurücksetzen
-            </button>
+        </div>
+        {isOverridden && onUndo && (
+          <button
+            onClick={onUndo}
+            className="flex items-center gap-1 text-xs text-primary hover:underline whitespace-nowrap"
+          >
+            <Undo2 className="h-3 w-3" /> Reset
+          </button>
+        )}
+      </div>
+
+      {exercises.length > 0 && (
+        <div className="mt-3 space-y-1">
+          {exercises.slice(0, 4).map((ex, i) => (
+            <div key={i} className="flex items-center justify-between text-sm">
+              <span className="text-foreground/80 truncate">{ex.name || "—"}</span>
+              <span className="text-xs text-muted-foreground ml-2 shrink-0">
+                {ex.sets ? `${ex.sets}×${ex.reps || ""}` : ex.distance || ex.duration || ""}
+              </span>
+            </div>
+          ))}
+          {exercises.length > 4 && (
+            <p className="text-xs text-muted-foreground">+{exercises.length - 4} weitere</p>
           )}
         </div>
-        {exercises.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {exercises.slice(0, 3).map((ex, i) => (
-              <Badge key={i} variant="secondary" className="text-xs font-normal">
-                {ex.name || "Übung"}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </CardHeader>
-      {exercises.length > 0 && (
-        <CardContent className="pt-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-                  <th className="pb-2 pr-3 font-medium">Übung</th>
-                  <th className="pb-2 pr-3 font-medium">Sets</th>
-                  <th className="pb-2 pr-3 font-medium">Reps</th>
-                  <th className="pb-2 pr-3 font-medium">Zone</th>
-                  <th className="hidden pb-2 font-medium sm:table-cell">Notizen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {exercises.map((ex, i) => (
-                  <tr key={i} className="border-b border-border/50 last:border-0">
-                    <td className="py-2 pr-3 font-medium text-foreground">{ex.name || "—"}</td>
-                    <td className="py-2 pr-3 text-muted-foreground">{ex.sets || "—"}</td>
-                    <td className="py-2 pr-3 text-muted-foreground">{ex.reps || ex.distance || "—"}</td>
-                    <td className="py-2 pr-3">
-                      {ex.zone ? (
-                        <Badge className={cn("text-xs", ZONE_COLORS[ex.zone] || "bg-secondary text-secondary-foreground")}>
-                          {ZONE_LABELS[ex.zone] || ex.zone}
-                        </Badge>
-                      ) : "—"}
-                    </td>
-                    <td className="hidden py-2 text-xs text-muted-foreground sm:table-cell">
-                      {ex.notes || "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -272,58 +228,55 @@ function DroppableDayCell({
   dow,
   dateNum,
   isActive,
+  isToday,
   sessionCount,
   completedCount,
-  isOver,
   onClick,
 }: {
   dateStr: string;
   dow: number;
   dateNum: number;
   isActive: boolean;
+  isToday: boolean;
   sessionCount: number;
   completedCount: number;
-  isOver: boolean;
   onClick: () => void;
 }) {
-  const { setNodeRef, isOver: dropOver } = useDroppable({ id: dateStr });
-  const highlighted = isOver || dropOver;
-  const allDone = sessionCount > 0 && completedCount === sessionCount;
-  const someDone = completedCount > 0 && completedCount < sessionCount;
+  const { setNodeRef, isOver } = useDroppable({ id: dateStr });
+  const hasSession = sessionCount > 0;
+  const allDone = hasSession && completedCount === sessionCount;
 
   return (
     <button
       ref={setNodeRef}
       onClick={onClick}
       className={cn(
-        "relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-2 text-xs font-bold transition-all",
+        "relative flex flex-1 flex-col items-center gap-1 rounded-xl py-2.5 text-xs font-bold transition-all min-w-0",
         isActive
-          ? "bg-primary text-primary-foreground"
-          : highlighted
-          ? "bg-primary/30 ring-2 ring-primary text-foreground"
-          : "text-muted-foreground hover:bg-secondary"
+          ? "bg-primary/15 ring-2 ring-primary"
+          : isOver
+          ? "bg-primary/10 ring-1 ring-primary/50"
+          : isToday
+          ? "bg-secondary"
+          : "hover:bg-secondary/50"
       )}
     >
-      <span className="uppercase">{DOW_SHORT[dow]}</span>
-      <span className={cn("text-sm", isActive ? "text-primary-foreground" : "text-foreground")}>
+      <span className="uppercase text-muted-foreground text-[10px]">{DOW_SHORT[dow]}</span>
+      <span className={cn(
+        "text-sm font-extrabold",
+        isActive ? "text-primary" : isToday ? "text-foreground" : "text-foreground/80"
+      )}>
         {dateNum}
       </span>
-      {!isActive && allDone && (
-        <span className="absolute bottom-1">
-          <Check className="h-3 w-3 text-primary" />
-        </span>
-      )}
-      {!isActive && someDone && (
-        <span className="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-primary ring-1 ring-primary/30" />
-      )}
-      {!isActive && sessionCount > 0 && completedCount === 0 && (
-        <span className="absolute bottom-1 h-1 w-1 rounded-full bg-primary" />
-      )}
-      {sessionCount > 1 && (
-        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-          {sessionCount}
-        </span>
-      )}
+      {/* Session indicator dot */}
+      <div className="h-1.5">
+        {hasSession && (
+          <span className={cn(
+            "block h-1.5 w-1.5 rounded-full",
+            allDone ? "bg-primary" : "bg-primary/50"
+          )} />
+        )}
+      </div>
     </button>
   );
 }
@@ -332,21 +285,14 @@ function DroppableDayCell({
 
 function DragOverlayCard({ session }: { session: Session }) {
   return (
-    <Card className="border-primary/20 bg-card shadow-lg w-[280px]">
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          <GripVertical className="h-4 w-4 text-primary" />
-          <CardTitle className="text-sm font-black text-foreground truncate">
-            {getSessionTitle(session)}
-          </CardTitle>
-          {session.sessionType && (
-            <Badge className="bg-primary text-primary-foreground text-xs uppercase">
-              {SESSION_TYPE_LABELS[session.sessionType] || session.sessionType}
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-    </Card>
+    <div className="glass-strong rounded-xl p-3 w-[260px] shadow-xl">
+      <div className="flex items-center gap-2">
+        <GripVertical className="h-4 w-4 text-primary" />
+        <span className="text-sm font-extrabold text-foreground truncate">
+          {getSessionTitle(session)}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -370,7 +316,6 @@ export default function Calendar() {
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } })
   );
 
-  // --- Load data ---
   useEffect(() => {
     if (!user) return;
     supabase
@@ -387,7 +332,6 @@ export default function Calendar() {
         setLoading(false);
       });
 
-    // Load session logs
     supabase
       .from("session_logs")
       .select("*")
@@ -428,31 +372,22 @@ export default function Calendar() {
     setViewWeek(Math.min(currentWeek, totalWeeks));
   }, [currentWeek, totalWeeks]);
 
-  // Set initial selected date to today
   useEffect(() => {
     if (!selectedDate) {
       setSelectedDate(toDateStr(new Date()));
     }
   }, [selectedDate]);
 
-  // --- All sessions with resolved dates ---
   const allSessionsWithDates = useMemo(() => {
     if (!startDate) return [];
     const all = getAllSessions(blocks);
     return all.map(({ session, weekNumber }) => {
       const originalDate = getOriginalDate(session, weekNumber, startDate);
       const resolvedDate = overrides[session.sessionId || ""] || originalDate;
-      return {
-        session,
-        weekNumber,
-        originalDate,
-        resolvedDate,
-        isOverridden: !!overrides[session.sessionId || ""],
-      };
+      return { session, weekNumber, originalDate, resolvedDate, isOverridden: !!overrides[session.sessionId || ""] };
     });
   }, [blocks, startDate, overrides]);
 
-  // --- Week dates ---
   const weekDates = useMemo(() => {
     if (!startDate) return [];
     const weekStart = new Date(startDate);
@@ -467,11 +402,8 @@ export default function Calendar() {
     });
   }, [startDate, viewWeek]);
 
-  // --- Sessions for each day in current week ---
   const sessionsForDate = useCallback(
-    (dateStr: string) => {
-      return allSessionsWithDates.filter((s) => s.resolvedDate === dateStr);
-    },
+    (dateStr: string) => allSessionsWithDates.filter((s) => s.resolvedDate === dateStr),
     [allSessionsWithDates]
   );
 
@@ -480,7 +412,6 @@ export default function Calendar() {
     [sessionsForDate, selectedDate]
   );
 
-  // --- Current block ---
   const currentBlock = useMemo(() => {
     return blocks.find((b) => viewWeek >= (b.weekStart || 0) && viewWeek <= (b.weekEnd || 0)) || blocks[0];
   }, [blocks, viewWeek]);
@@ -492,13 +423,11 @@ export default function Calendar() {
   const canGoPrev = viewWeek > 1;
   const canGoNext = viewWeek < totalWeeks;
 
-  // --- Active dragging session ---
   const activeDragSession = useMemo(() => {
     if (!activeSessionId) return null;
     return allSessionsWithDates.find((s) => s.session.sessionId === activeSessionId)?.session || null;
   }, [activeSessionId, allSessionsWithDates]);
 
-  // --- Persist overrides ---
   const persistOverrides = useCallback(
     async (newOverrides: Overrides) => {
       if (!user) return false;
@@ -512,7 +441,6 @@ export default function Calendar() {
     [user]
   );
 
-  // --- Drag handlers ---
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveSessionId(event.active.id as string);
   }, []);
@@ -522,15 +450,11 @@ export default function Calendar() {
       setActiveSessionId(null);
       const { active, over } = event;
       if (!over) return;
-
       const sessionId = active.id as string;
       const targetDate = over.id as string;
-
-      // Find current resolved date
       const entry = allSessionsWithDates.find((s) => s.session.sessionId === sessionId);
       if (!entry || entry.resolvedDate === targetDate) return;
 
-      // Optimistic update
       const oldOverrides = { ...overrides };
       const newOverrides = { ...overrides, [sessionId]: targetDate };
       setOverrides(newOverrides);
@@ -538,17 +462,12 @@ export default function Calendar() {
       const ok = await persistOverrides(newOverrides);
       if (!ok) {
         setOverrides(oldOverrides);
-        toast({
-          title: "Fehler",
-          description: "Session konnte nicht verschoben werden.",
-          variant: "destructive",
-        });
+        toast({ title: "Fehler", description: "Session konnte nicht verschoben werden.", variant: "destructive" });
       }
     },
     [allSessionsWithDates, overrides, persistOverrides]
   );
 
-  // --- Undo ---
   const handleUndo = useCallback(
     async (sessionId: string) => {
       const oldOverrides = { ...overrides };
@@ -559,27 +478,20 @@ export default function Calendar() {
       const ok = await persistOverrides(newOverrides);
       if (!ok) {
         setOverrides(oldOverrides);
-        toast({
-          title: "Fehler",
-          description: "Zurücksetzen fehlgeschlagen.",
-          variant: "destructive",
-        });
+        toast({ title: "Fehler", description: "Zurücksetzen fehlgeschlagen.", variant: "destructive" });
       }
     },
     [overrides, persistOverrides]
   );
-  // --- Reset week overrides ---
+
   const weekHasOverrides = useMemo(() => {
     if (weekDates.length === 0) return false;
     const mondayStr = toDateStr(weekDates[0]);
     const sundayStr = toDateStr(weekDates[6]);
-
     return allSessionsWithDates.some((entry) => {
       const sid = entry.session.sessionId || "";
       if (!overrides[sid]) return false;
-      // Override points INTO this week
       if (overrides[sid] >= mondayStr && overrides[sid] <= sundayStr) return true;
-      // Original date is in this week but overridden AWAY
       if (entry.originalDate >= mondayStr && entry.originalDate <= sundayStr) return true;
       return false;
     });
@@ -591,42 +503,41 @@ export default function Calendar() {
     if (weekDates.length === 0 || !user) return;
     const mondayStr = toDateStr(weekDates[0]);
     const sundayStr = toDateStr(weekDates[6]);
-
     const affectedIds: string[] = [];
     allSessionsWithDates.forEach((entry) => {
       const sid = entry.session.sessionId || "";
       if (!overrides[sid]) return;
-      if (overrides[sid] >= mondayStr && overrides[sid] <= sundayStr) {
-        affectedIds.push(sid);
-      } else if (entry.originalDate >= mondayStr && entry.originalDate <= sundayStr) {
-        affectedIds.push(sid);
-      }
+      if (overrides[sid] >= mondayStr && overrides[sid] <= sundayStr) affectedIds.push(sid);
+      else if (entry.originalDate >= mondayStr && entry.originalDate <= sundayStr) affectedIds.push(sid);
     });
 
     const oldOverrides = { ...overrides };
     const newOverrides = { ...overrides };
     affectedIds.forEach((id) => delete newOverrides[id]);
-
     setOverrides(newOverrides);
     setShowResetConfirm(false);
 
     const ok = await persistOverrides(newOverrides);
     if (!ok) {
       setOverrides(oldOverrides);
-      toast({
-        title: "Fehler",
-        description: "Woche konnte nicht zurückgesetzt werden.",
-        variant: "destructive",
-      });
+      toast({ title: "Fehler", description: "Woche konnte nicht zurückgesetzt werden.", variant: "destructive" });
     }
   }, [weekDates, allSessionsWithDates, overrides, user, persistOverrides]);
 
+  const todayStr = toDateStr(new Date());
 
+  // Month label for header
+  const monthLabel = useMemo(() => {
+    if (weekDates.length === 0) return "";
+    const mid = weekDates[3];
+    const months = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."];
+    return `${months[mid.getMonth()]} ${mid.getFullYear()}`;
+  }, [weekDates]);
 
   if (loading || authLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-        <Zap className="h-16 w-16 animate-pulse text-primary drop-shadow-[0_0_24px_hsl(var(--primary)/0.6)]" />
+        <Zap className="h-16 w-16 animate-pulse text-primary" />
       </div>
     );
   }
@@ -638,58 +549,47 @@ export default function Calendar() {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="min-h-screen bg-background pb-20 md:pb-0">
+      <div className="min-h-screen bg-background pb-24 md:pb-0">
         <TopNav />
 
         <main className="mx-auto max-w-2xl px-4 py-6 sm:px-8">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-lg font-extrabold text-foreground">{monthLabel}</p>
+            <button
+              onClick={() => {
+                setViewWeek(Math.min(currentWeek, totalWeeks));
+                setSelectedDate(todayStr);
+              }}
+              className="text-sm font-semibold text-primary hover:underline"
+            >
+              Heute
+            </button>
+          </div>
+
           {/* Week nav */}
-          <div className="flex items-center justify-between py-4">
-            <Button variant="ghost" size="icon" disabled={!canGoPrev} onClick={() => setViewWeek((v) => v - 1)}>
+          <div className="flex items-center justify-between mb-4">
+            <Button variant="ghost" size="icon" disabled={!canGoPrev} onClick={() => setViewWeek((v) => v - 1)} className="text-muted-foreground">
               <ChevronLeft className="h-5 w-5" />
             </Button>
             <div className="text-center">
-              <p className="text-lg font-black uppercase tracking-wider text-foreground">
+              <p className="text-sm font-bold text-foreground">
                 Woche {viewWeek}
               </p>
               {currentBlock?.blockName && (
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {currentBlock.blockName}
                 </p>
               )}
             </div>
-            <Button variant="ghost" size="icon" disabled={!canGoNext} onClick={() => setViewWeek((v) => v + 1)}>
+            <Button variant="ghost" size="icon" disabled={!canGoNext} onClick={() => setViewWeek((v) => v + 1)} className="text-muted-foreground">
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
 
-          {/* Reset week button */}
-          {weekHasOverrides && (
-            <div className="relative">
-              {!showResetConfirm ? (
-                <button
-                  onClick={() => setShowResetConfirm(true)}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  Woche zurücksetzen
-                </button>
-              ) : (
-                <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-3">
-                  <p className="text-xs text-foreground">Alle Verschiebungen dieser Woche zurücksetzen?</p>
-                  <Button size="sm" variant="destructive" onClick={handleResetWeek} className="text-xs h-7">
-                    Ja, zurücksetzen
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setShowResetConfirm(false)} className="text-xs h-7">
-                    Abbrechen
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Day strip */}
-          <div className="flex justify-between gap-1 rounded-xl bg-card card-shadow p-2 mt-4">
-            {weekDates.map((date, i) => {
+          <div className="flex gap-1 rounded-xl glass p-2 mb-4">
+            {weekDates.map((date) => {
               const dateStr = toDateStr(date);
               const dow = date.getDay();
               const daySessions = sessionsForDate(dateStr);
@@ -704,28 +604,59 @@ export default function Calendar() {
                   dow={dow}
                   dateNum={date.getDate()}
                   isActive={selectedDate === dateStr}
+                  isToday={dateStr === todayStr}
                   sessionCount={count}
                   completedCount={completedCount}
-                  isOver={false}
                   onClick={() => setSelectedDate(dateStr)}
                 />
               );
             })}
           </div>
 
+          {/* Reset week */}
+          {weekHasOverrides && (
+            <div className="mb-4">
+              {!showResetConfirm ? (
+                <button
+                  onClick={() => setShowResetConfirm(true)}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Woche zurücksetzen
+                </button>
+              ) : (
+                <div className="flex items-center justify-center gap-2 glass rounded-lg p-3">
+                  <p className="text-xs text-foreground">Alle Verschiebungen zurücksetzen?</p>
+                  <Button size="sm" variant="destructive" onClick={handleResetWeek} className="text-xs h-7">Ja</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowResetConfirm(false)} className="text-xs h-7">Nein</Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Selected date label */}
+          {selectedDate && (
+            <div className="mb-3">
+              <p className="text-sm font-bold text-muted-foreground">
+                {(() => {
+                  const d = new Date(selectedDate + "T00:00:00");
+                  return `${formatDateLabel(d)} ${DOW_LONG[d.getDay()]}`;
+                })()}
+              </p>
+            </div>
+          )}
+
           {/* Day detail */}
-          <div className="mt-4 space-y-4">
+          <div className="space-y-4">
             {selectedSessions.length > 0 ? (
               <>
                 {weekData?.coachNote && (
-                  <Card className="card-shadow border-l-4 border-l-primary">
-                    <CardContent className="py-3">
-                      <p className="text-sm italic text-foreground/80">💬 {weekData.coachNote}</p>
-                    </CardContent>
-                  </Card>
+                  <div className="glass-accent rounded-xl p-3">
+                    <p className="text-sm italic text-foreground/80">💬 {weekData.coachNote}</p>
+                  </div>
                 )}
                 {selectedSessions.map((entry) => (
-                  <div key={entry.session.sessionId} className="space-y-2">
+                  <div key={entry.session.sessionId} className="space-y-3">
                     <DraggableSessionCard
                       session={entry.session}
                       isOverridden={entry.isOverridden}
@@ -744,14 +675,12 @@ export default function Calendar() {
                 ))}
               </>
             ) : (
-              <Card className="card-shadow">
-                <CardContent className="py-12 text-center">
-                  <p className="text-2xl font-extrabold uppercase text-foreground">RUHETAG</p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Erholung ist genauso wichtig wie das Training selbst. Nutze den Tag zur Regeneration.
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="glass rounded-xl p-8 text-center">
+                <p className="text-lg font-extrabold uppercase text-foreground">Ruhetag</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Erholung ist genauso wichtig wie das Training.
+                </p>
+              </div>
             )}
           </div>
         </main>

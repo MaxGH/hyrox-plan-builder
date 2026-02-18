@@ -1,10 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, CalendarDays, User } from "lucide-react";
+import { Home, CalendarDays, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/calendar", label: "Kalender", icon: CalendarDays },
+  { path: "/dashboard", label: "Home", icon: Home },
+  { path: "/calendar", label: "Training", icon: CalendarDays },
   { path: "/plan", label: "Profil", icon: User },
 ];
 
@@ -13,7 +13,7 @@ export default function TopNav() {
   const navigate = useNavigate();
 
   return (
-    <nav className="hidden md:flex sticky top-0 z-50 h-16 items-center justify-between border-b border-border bg-card px-6">
+    <nav className="hidden md:flex sticky top-0 z-50 h-16 items-center justify-between glass-strong px-6">
       <button onClick={() => navigate("/dashboard")} className="text-base font-extrabold uppercase tracking-widest text-foreground">
         HYROX<span className="text-primary"> COACH</span>
       </button>
@@ -27,7 +27,7 @@ export default function TopNav() {
               className={cn(
                 "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
                 active
-                  ? "text-foreground border-b-2 border-primary"
+                  ? "text-primary bg-primary/10"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >

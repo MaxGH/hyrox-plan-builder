@@ -29,16 +29,16 @@ interface SessionLogCardProps {
 }
 
 const RPE_COLORS: Record<number, string> = {
-  1: "bg-secondary text-muted-foreground",
-  2: "bg-secondary text-muted-foreground",
-  3: "bg-secondary text-muted-foreground",
-  4: "bg-yellow-100 text-yellow-800",
-  5: "bg-yellow-100 text-yellow-800",
-  6: "bg-yellow-100 text-yellow-800",
-  7: "bg-orange-100 text-orange-800",
-  8: "bg-orange-100 text-orange-800",
-  9: "bg-red-100 text-red-800",
-  10: "bg-red-100 text-red-800",
+  1: "bg-secondary text-secondary-foreground",
+  2: "bg-secondary text-secondary-foreground",
+  3: "bg-secondary text-secondary-foreground",
+  4: "bg-yellow-900/40 text-yellow-400",
+  5: "bg-yellow-900/40 text-yellow-400",
+  6: "bg-yellow-900/40 text-yellow-400",
+  7: "bg-orange-900/40 text-orange-400",
+  8: "bg-orange-900/40 text-orange-400",
+  9: "bg-red-900/40 text-red-400",
+  10: "bg-red-900/40 text-red-400",
 };
 
 export default function SessionLogCard({
@@ -120,22 +120,20 @@ export default function SessionLogCard({
 
   if (!completed) {
     return (
-      <div className="rounded-xl border border-dashed border-border p-4">
-        <Button
-          onClick={handleComplete}
-          disabled={saving}
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider font-bold rounded-full"
-          size="lg"
-        >
-          <Check className="mr-2 h-5 w-5" />
-          Als erledigt markieren
-        </Button>
-      </div>
+      <Button
+        onClick={handleComplete}
+        disabled={saving}
+        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 uppercase tracking-wider font-bold rounded-full"
+        size="lg"
+      >
+        <Check className="mr-2 h-5 w-5" />
+        Als erledigt markieren
+      </Button>
     );
   }
 
   return (
-    <div className="rounded-xl border border-primary/20 bg-green-50 p-4 space-y-4">
+    <div className="rounded-xl glass-accent p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <Badge className="bg-primary text-primary-foreground">
@@ -165,7 +163,7 @@ export default function SessionLogCard({
                 "flex-1 rounded-lg py-1.5 text-xs font-bold transition-all",
                 rpe === v
                   ? RPE_COLORS[v]
-                  : "bg-card text-muted-foreground hover:bg-secondary border border-border"
+                  : "bg-secondary text-muted-foreground hover:bg-muted border border-border"
               )}
             >
               {v}
@@ -181,7 +179,7 @@ export default function SessionLogCard({
           onChange={(e) => setNotes(e.target.value.slice(0, 200))}
           onBlur={handleNotesBlur}
           placeholder="Notiz zur Einheit… (optional)"
-          className="resize-none text-sm bg-card"
+          className="resize-none text-sm bg-secondary/50 border-border"
           rows={2}
         />
         <p className="text-right text-[10px] text-muted-foreground mt-1">

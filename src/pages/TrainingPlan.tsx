@@ -2,9 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Accordion,
   AccordionContent,
@@ -12,9 +11,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Zap, LogOut, RefreshCw, Trophy, Clock, Dumbbell } from "lucide-react";
+import { Zap, LogOut, RefreshCw, Trophy, Clock, Dumbbell, Target, ChevronRight } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
+import { cn } from "@/lib/utils";
 
 interface Exercise {
   name?: string;
@@ -83,30 +83,22 @@ interface PlanData {
 }
 
 const ZONE_LABELS: Record<string, string> = {
-  zone1: "Zone 1",
-  zone2: "Zone 2",
-  zone3: "Zone 3",
-  zone4: "Zone 4",
-  zone5: "Zone 5",
-  racePace: "Race Pace",
+  zone1: "Zone 1", zone2: "Zone 2", zone3: "Zone 3",
+  zone4: "Zone 4", zone5: "Zone 5", racePace: "Race Pace",
 };
 
-const ZONE_BORDER_COLORS: Record<string, string> = {
-  zone1: "border-l-gray-400",
-  zone2: "border-l-blue-400",
-  zone3: "border-l-yellow-400",
-  zone4: "border-l-orange-400",
-  zone5: "border-l-red-400",
+const ZONE_COLORS: Record<string, string> = {
+  zone1: "border-l-muted-foreground",
+  zone2: "border-l-blue-500",
+  zone3: "border-l-yellow-500",
+  zone4: "border-l-orange-500",
+  zone5: "border-l-red-500",
   racePace: "border-l-primary",
 };
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
-  combo: "Kombi",
-  run: "Lauf",
-  strength: "Kraft",
-  hyrox: "HYROX",
-  recovery: "Recovery",
-  race: "Wettkampf",
+  combo: "Kombi", run: "Lauf", strength: "Kraft",
+  hyrox: "HYROX", recovery: "Recovery", race: "Wettkampf",
 };
 
 function formatDate(dateStr?: string): string {
@@ -157,7 +149,6 @@ export default function TrainingPlan() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background">
         <Zap className="h-16 w-16 animate-pulse text-primary" />
-        <p className="mt-4 text-muted-foreground">Plan wird geladen…</p>
       </div>
     );
   }
@@ -167,8 +158,8 @@ export default function TrainingPlan() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 text-center">
         <Zap className="mb-4 h-12 w-12 text-muted-foreground" />
         <h1 className="text-2xl font-bold text-foreground">Kein Plan gefunden</h1>
-        <p className="mt-2 text-muted-foreground">Starte jetzt dein Onboarding und erstelle deinen Plan.</p>
-        <Button onClick={() => navigate("/onboarding")} className="mt-6 uppercase tracking-wider bg-foreground text-background hover:bg-foreground/90 rounded-full">
+        <p className="mt-2 text-muted-foreground">Starte jetzt dein Onboarding.</p>
+        <Button onClick={() => navigate("/onboarding")} className="mt-6 uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 rounded-full">
           Zum Onboarding
         </Button>
       </div>
@@ -182,147 +173,174 @@ export default function TrainingPlan() {
   const athleteName = p?.athleteName || plan.athleteName || "Athlet";
   const category = (p?.category || plan.category || "open").toUpperCase();
   const hasExp = p?.hasRaceExperience ?? plan.hasRaceExperience;
+  const totalWeeks = p?.totalWeeks || 0;
+
+  // Current week for progress
+  const currentWeek = (() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    // Approximate
+    return Math.min(totalWeeks, Math.max(1, Math.ceil((today.getTime() - new Date(p?.raceDate || today).getTime()) / (7 * 86400000) + totalWeeks)));
+  })();
+
+  const blockProgress = (() => {
+    if (!currentBlock) return 0;
+    const ws = currentBlock.weekStart || 1;
+    const we = currentBlock.weekEnd || ws;
+    const span = we - ws + 1;
+    return Math.min(100, Math.round(((currentWeek - ws) / span) * 100));
+  })();
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-0">
+    <div className="min-h-screen bg-background pb-24 md:pb-0">
       <TopNav />
 
-      {/* Hero Header */}
-      <header className="border-b border-border bg-card px-4 py-6 sm:px-8">
-        <div className="mx-auto max-w-4xl">
-          <h1 className="text-3xl font-extrabold uppercase tracking-wider text-foreground sm:text-4xl">
-            {athleteName}
-          </h1>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className={category === "PRO" ? "border-primary text-primary" : "border-border text-muted-foreground"}>
-              {category}
-            </Badge>
-            {hasExp !== undefined && (
-              <Badge variant="outline" className="border-border text-muted-foreground">
-                <Trophy className="mr-1 h-3 w-3" />
-                {hasExp ? "Race Veteran" : "First Timer"}
-              </Badge>
-            )}
+      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-8 space-y-6">
+        {/* Profile Header */}
+        <div className="flex items-center gap-4">
+          <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center text-primary font-extrabold text-xl">
+            {athleteName.charAt(0).toUpperCase()}
           </div>
-
-          <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
-            {p?.raceName && (
-              <span className="flex items-center gap-1">
-                <Dumbbell className="h-3.5 w-3.5" />
-                {p.raceName} — {formatDate(p.raceDate)}
-              </span>
-            )}
-            {p?.totalWeeks && (
-              <span className="flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" />
-                {p.totalWeeks}-Wochen-Plan
-              </span>
-            )}
+          <div className="flex-1">
+            <h1 className="text-2xl font-extrabold text-foreground">{athleteName}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge className="bg-primary/15 text-primary border-0 text-xs">{category}</Badge>
+              {hasExp !== undefined && (
+                <Badge className="bg-secondary text-secondary-foreground border-0 text-xs">
+                  <Trophy className="mr-1 h-3 w-3" />
+                  {hasExp ? "Race Veteran" : "First Timer"}
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
-      </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-8">
+        {/* Current Block Card */}
+        {currentBlock && (
+          <div className="glass-accent rounded-2xl p-5 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Aktueller Block
+            </p>
+            <h2 className="text-xl font-extrabold text-foreground">{currentBlock.blockName}</h2>
+            {currentBlock.blockGoal && (
+              <p className="text-sm text-muted-foreground">{currentBlock.blockGoal}</p>
+            )}
+            {/* Progress Bar */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Fortschritt</span>
+                <span>{blockProgress}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${blockProgress}%` }}
+                />
+              </div>
+            </div>
+            {p?.raceName && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Target className="h-4 w-4 text-primary" />
+                {p.raceName} — {formatDate(p.raceDate)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Metrics Row */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="glass rounded-xl p-3 text-center">
+            <p className="text-lg font-extrabold text-foreground">{totalWeeks}</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Wochen</p>
+          </div>
+          <div className="glass rounded-xl p-3 text-center">
+            <p className="text-lg font-extrabold text-foreground">{blocks.length}</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Blöcke</p>
+          </div>
+          <div className="glass rounded-xl p-3 text-center">
+            <p className="text-lg font-extrabold text-foreground">
+              {blocks.reduce((sum, b) => sum + (b.weeks || []).reduce((ws, w) => ws + (w.sessions?.length || 0), 0), 0)}
+            </p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Sessions</p>
+          </div>
+        </div>
+
         {/* Training Zones */}
         {Object.keys(zones).length > 0 && (
-          <section className="mb-10">
-            <h2 className="mb-4 text-lg font-extrabold uppercase tracking-wider text-foreground">
-              Deine Trainingszonen
-            </h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Trainingszonen
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {Object.entries(zones).map(([key, value]) => {
-                if (key === "racePace") return null;
                 if (key === "targetRacePaceMin" || key === "targetRacePaceMax" || key === "targetRacePaceNote") return null;
                 return (
-                  <Card
+                  <div
                     key={key}
-                    className={`card-shadow border-l-4 ${ZONE_BORDER_COLORS[key] || "border-l-border"}`}
+                    className={cn(
+                      "glass rounded-xl p-3 border-l-4",
+                      ZONE_COLORS[key] || "border-l-muted"
+                    )}
                   >
-                    <CardContent className="py-4 px-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                        {ZONE_LABELS[key] || key}
-                      </p>
-                      <p className="mt-1 text-lg font-extrabold text-foreground">{value}</p>
-                    </CardContent>
-                  </Card>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {ZONE_LABELS[key] || key}
+                    </p>
+                    <p className="text-base font-extrabold text-foreground mt-0.5">{value}</p>
+                  </div>
                 );
               })}
-              {/* Aktuelle Race Pace */}
-              {zones.racePace && (
-                <Card className="card-shadow border-l-4 border-l-primary">
-                  <CardContent className="py-4 px-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">AKTUELLE RACE PACE</p>
-                    <p className="mt-1 text-lg font-extrabold text-foreground">{zones.racePace}</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">Basis: deine 5km Bestzeit</p>
-                  </CardContent>
-                </Card>
+              {/* Target Race Pace */}
+              {((zones as any).targetRacePaceMin) && (
+                <div className="glass rounded-xl p-3 border-l-4 border-l-blue-500">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-400">
+                    Ziel Race Pace
+                  </p>
+                  <p className="text-base font-extrabold text-foreground mt-0.5">
+                    {(zones as any).targetRacePaceMin} – {(zones as any).targetRacePaceMax}
+                  </p>
+                </div>
               )}
-              {/* Ziel Race Pace */}
-              <Card className="card-shadow border-l-4 border-l-blue-400">
-                <CardContent className="py-4 px-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-600">ZIEL RACE PACE</p>
-                  <p className="mt-1 text-lg font-extrabold text-foreground">
-                    {(zones as any).targetRacePaceMin
-                      ? `${(zones as any).targetRacePaceMin} – ${(zones as any).targetRacePaceMax}`
-                      : zones.racePace || "—"}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    {(zones as any).targetRacePaceNote || ((zones as any).targetRacePaceMin ? "Basis: deine Zielzeit" : "Plan neu generieren")}
-                  </p>
-                </CardContent>
-              </Card>
             </div>
-          </section>
+          </div>
         )}
 
         {/* Block Navigation */}
         {blocks.length > 0 && (
-          <>
-            <section className="mb-6">
-              <ScrollArea className="w-full">
-                <div className="flex gap-2 pb-3">
-                  {blocks.map((block, i) => (
-                    <button
-                      key={block.blockNumber ?? i}
-                      onClick={() => setActiveBlock(i)}
-                      className={`shrink-0 rounded-full border px-5 py-2 text-sm font-bold uppercase tracking-wide transition-colors ${
-                        i === activeBlock
-                          ? "border-foreground bg-foreground text-background"
-                          : "border-border bg-card text-muted-foreground hover:border-foreground/30"
-                      }`}
-                    >
-                      Block {block.blockNumber ?? i + 1}: {block.blockName || "—"}
-                    </button>
-                  ))}
-                </div>
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
-            </section>
+          <div className="space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              Trainingsblöcke
+            </p>
+            <ScrollArea className="w-full">
+              <div className="flex gap-2 pb-3">
+                {blocks.map((block, i) => (
+                  <button
+                    key={block.blockNumber ?? i}
+                    onClick={() => setActiveBlock(i)}
+                    className={cn(
+                      "shrink-0 rounded-full px-4 py-2 text-sm font-bold uppercase tracking-wide transition-all",
+                      i === activeBlock
+                        ? "bg-primary text-primary-foreground"
+                        : "glass text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Block {block.blockNumber ?? i + 1}
+                  </button>
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
 
             {/* Active Block Content */}
             {currentBlock && (
-              <section>
-                <div className="mb-4">
-                  <h2 className="text-xl font-extrabold uppercase tracking-wider text-foreground">
-                    {currentBlock.blockName}
-                  </h2>
-                  {currentBlock.blockGoal && (
-                    <p className="mt-1 text-sm text-muted-foreground">{currentBlock.blockGoal}</p>
-                  )}
-                </div>
-
+              <>
                 {currentBlock.coachIntro && (
-                  <Card className="mb-6 card-shadow border-l-4 border-l-primary">
-                    <CardContent className="py-4">
-                      <p className="text-sm italic text-foreground/80">
-                        💬 {currentBlock.coachIntro}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <div className="glass-accent rounded-xl p-4">
+                    <p className="text-sm italic text-foreground/80">
+                      💬 {currentBlock.coachIntro}
+                    </p>
+                  </div>
                 )}
 
-                {/* Weeks Accordion */}
                 <Accordion type="single" collapsible defaultValue="week-0">
                   {(currentBlock.weeks || []).map((week, wi) => (
                     <AccordionItem key={wi} value={`week-${wi}`} className="border-border">
@@ -335,20 +353,15 @@ export default function TrainingPlan() {
                             <span className="text-sm text-muted-foreground">— {week.weekGoal}</span>
                           )}
                           {week.isDeloadWeek && (
-                            <Badge variant="outline" className="border-primary/40 text-primary text-xs">
-                              Deload
-                            </Badge>
+                            <Badge className="bg-primary/15 text-primary border-0 text-xs">Deload</Badge>
                           )}
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
                         {week.coachNote && (
-                          <p className="mb-4 text-sm italic text-muted-foreground">
-                            {week.coachNote}
-                          </p>
+                          <p className="mb-4 text-sm italic text-muted-foreground">{week.coachNote}</p>
                         )}
-
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           {(week.sessions || []).map((session, si) => (
                             <SessionCard key={session.sessionId ?? si} session={session} />
                           ))}
@@ -357,30 +370,30 @@ export default function TrainingPlan() {
                     </AccordionItem>
                   ))}
                 </Accordion>
-              </section>
+              </>
             )}
-          </>
+          </div>
         )}
 
-        {/* Footer */}
-        <footer className="mt-12 flex flex-col items-center gap-3 border-t border-border pt-8 pb-12">
+        {/* Footer Actions */}
+        <div className="flex flex-col items-center gap-4 border-t border-border pt-8 pb-8">
           <Button
             onClick={handleRegenerate}
             disabled={deleting}
             variant="outline"
-            className="w-full max-w-xs uppercase tracking-wider rounded-full"
+            className="w-full max-w-xs uppercase tracking-wider rounded-full border-border text-foreground"
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${deleting ? "animate-spin" : ""}`} />
+            <RefreshCw className={cn("mr-2 h-4 w-4", deleting && "animate-spin")} />
             {deleting ? "Wird gelöscht…" : "Plan neu erstellen"}
           </Button>
           <button
             onClick={signOut}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mt-2"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <LogOut className="h-4 w-4" />
             Abmelden
           </button>
-        </footer>
+        </div>
       </main>
 
       <BottomNav />
@@ -390,74 +403,46 @@ export default function TrainingPlan() {
 
 /* ─── Session Card ─── */
 
-function SessionCard({ session }: { session: Session }) {
+function SessionCard({ session }: { session: { sessionId?: string; dayOfWeek?: string; sessionType?: string; title?: string; focus?: string; durationMinutes?: number; durationMin?: number; coachIntro?: string; exercises?: Exercise[]; mainBlock?: Exercise[] } }) {
   const exercises = session.mainBlock || session.exercises || [];
   const duration = session.durationMinutes ?? session.durationMin;
   const type = session.sessionType ? SESSION_TYPE_LABELS[session.sessionType] || session.sessionType : null;
 
   return (
-    <Card className="card-shadow">
-      <CardHeader className="pb-2">
-        <div className="flex flex-wrap items-center gap-2">
-          {session.dayOfWeek && (
-            <CardTitle className="text-base">{session.dayOfWeek}</CardTitle>
-          )}
-          {type && (
-            <Badge variant="secondary" className="text-xs uppercase">
-              {type}
-            </Badge>
-          )}
-          {duration && (
-            <span className="text-xs text-muted-foreground">{duration} Min</span>
-          )}
-        </div>
-        {(session.title || session.focus) && (
-          <p className="text-sm text-muted-foreground">{session.title || session.focus}</p>
+    <div className="glass rounded-xl p-4">
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        {session.dayOfWeek && (
+          <span className="text-sm font-bold text-foreground">{session.dayOfWeek}</span>
         )}
-        {session.coachIntro && (
-          <p className="mt-1 text-xs italic text-muted-foreground/70">{session.coachIntro}</p>
+        {type && (
+          <Badge className="bg-primary/15 text-primary border-0 text-xs uppercase">{type}</Badge>
         )}
-      </CardHeader>
+        {duration && (
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="h-3 w-3" /> {duration} Min
+          </span>
+        )}
+      </div>
+      {(session.title || session.focus) && (
+        <p className="text-sm text-muted-foreground mb-2">{session.title || session.focus}</p>
+      )}
+      {session.coachIntro && (
+        <p className="text-xs italic text-muted-foreground/70 mb-2">{session.coachIntro}</p>
+      )}
 
       {exercises.length > 0 && (
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs uppercase text-muted-foreground">
-                  <th className="pb-2 pr-3 font-medium">Übung</th>
-                  <th className="pb-2 pr-3 font-medium">Volumen</th>
-                  <th className="hidden pb-2 pr-3 font-medium sm:table-cell">Zone</th>
-                  <th className="hidden pb-2 font-medium md:table-cell">Notizen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {exercises.map((ex, i) => (
-                  <tr key={i} className="border-b border-border/50 last:border-0">
-                    <td className="py-2 pr-3 font-medium text-foreground">{ex.name || "—"}</td>
-                    <td className="py-2 pr-3 text-muted-foreground">
-                      {formatVolume(ex)}
-                    </td>
-                    <td className="hidden py-2 pr-3 sm:table-cell">
-                      {ex.zone ? (
-                        <Badge variant="outline" className="text-xs border-border">
-                          {ZONE_LABELS[ex.zone] || ex.zone}
-                        </Badge>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="hidden py-2 text-xs text-muted-foreground md:table-cell">
-                      {ex.notes || "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
+        <div className="space-y-1 mt-2">
+          {exercises.map((ex, i) => (
+            <div key={i} className="flex items-center justify-between text-sm">
+              <span className="text-foreground/80 truncate">{ex.name || "—"}</span>
+              <span className="text-xs text-muted-foreground ml-2 shrink-0">
+                {formatVolume(ex)}
+              </span>
+            </div>
+          ))}
+        </div>
       )}
-    </Card>
+    </div>
   );
 }
 
